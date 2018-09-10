@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="BaseLogEntry.xsd"/>
+    <xs:include schemaLocation="EventStatus.xsd"/>
+    <xs:complexType name="EventTrailer">
+        <xs:complexContent>
+            <xs:extension base="BaseLogEntry">
+                <xs:attribute use="required" type="EventStatus" name="eventStatus" />
+                <xs:attribute use="required" type="xs:string" name="owner" />
+                <xs:attribute use="required" type="xs:integer" name="elapsedTime" />
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

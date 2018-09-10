@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        elementFormDefault="qualified"
+        targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Expression.xsd"/>
+    <xs:include schemaLocation="../Parameter.xsd"/>
+    <xs:include schemaLocation="../stmt/Statement.xsd"/>
+    <xs:complexType name="ClosureExpression">
+        <xs:complexContent>
+            <xs:extension base="Expression">
+                <xs:sequence>
+                    <xs:element name="parameters" type="ParameterArray" minOccurs="0"/>
+                    <xs:element name="code" type="Statement" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

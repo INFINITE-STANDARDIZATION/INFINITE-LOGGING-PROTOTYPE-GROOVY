@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Statement.xsd"/>
+    <xs:include schemaLocation="../expr/Expression.xsd"/>
+    <xs:complexType name="CaseStatementList">
+        <xs:sequence>
+            <xs:element name="caseStatement" type="CaseStatement" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="CaseStatement">
+        <xs:complexContent>
+            <xs:extension base="Statement">
+                <xs:sequence>
+                    <xs:element name="code" type="Statement"/>
+                    <xs:element name="expression" type="Expression"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

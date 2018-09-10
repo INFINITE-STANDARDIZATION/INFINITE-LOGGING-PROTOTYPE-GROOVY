@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        elementFormDefault="qualified"
+        targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Expression.xsd"/>
+    <xs:include schemaLocation="../MethodNode.xsd"/>
+    <xs:complexType name="MethodCallExpression">
+        <xs:complexContent>
+            <xs:extension base="Expression">
+                <xs:sequence>
+                    <xs:element name="objectExpression" type="Expression" minOccurs="0"/>
+                    <xs:element name="method" type="Expression" minOccurs="0"/>
+                    <xs:element name="arguments" type="Expression" minOccurs="0"/>
+                    <xs:element name="target" type="MethodNode" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

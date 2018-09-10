@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="RuntimeLogEntry.xsd"/>
+    <xs:complexType abstract="true" name="BaseEvent">
+        <xs:complexContent>
+            <xs:extension base="RuntimeLogEntry">
+                <xs:attribute use="required" name="className" type="xs:string"/>
+                <xs:attribute use="required" name="methodName" type="xs:string"/>
+                <xs:attribute use="required" name="lineNumber" type="xs:integer"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

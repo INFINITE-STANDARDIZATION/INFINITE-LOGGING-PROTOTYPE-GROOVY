@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema
+        elementFormDefault="qualified"
+        targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+        xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Expression.xsd"/>
+    <xs:complexType name="MapEntryExpressionList">
+        <xs:sequence>
+            <xs:element name="mapEntryExpression" type="MapEntryExpression" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType name="MapEntryExpression">
+        <xs:complexContent>
+            <xs:extension base="Expression">
+                <xs:sequence>
+                    <xs:element name="keyExpression" type="Expression" minOccurs="0"/>
+                    <xs:element name="valueExpression" type="Expression" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

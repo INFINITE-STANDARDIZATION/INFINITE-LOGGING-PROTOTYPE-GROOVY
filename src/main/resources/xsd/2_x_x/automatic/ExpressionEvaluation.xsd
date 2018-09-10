@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="../ast/stmt/Statement.xsd"/>
+    <xs:include schemaLocation="RuntimeEvent.xsd"/>
+    <xs:include schemaLocation="../Object.xsd"/>
+    <xs:complexType name="ExpressionEvaluation">
+        <xs:complexContent>
+            <xs:extension base="RuntimeEvent">
+                <xs:sequence>
+                    <xs:element type="Expression" name="expression" minOccurs="0"/>
+                    <xs:element type="Object" name="expressionResult" minOccurs="0"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

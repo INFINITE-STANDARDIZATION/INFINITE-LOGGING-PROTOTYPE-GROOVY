@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="../ASTNode.xsd"/>
+    <xs:complexType name="StatementList">
+        <xs:sequence>
+            <xs:element name="statement" type="Statement" minOccurs="0" maxOccurs="unbounded"/>
+        </xs:sequence>
+    </xs:complexType>
+    <xs:complexType abstract="true" name="Statement">
+        <xs:complexContent>
+            <xs:extension base="ASTNode"/>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

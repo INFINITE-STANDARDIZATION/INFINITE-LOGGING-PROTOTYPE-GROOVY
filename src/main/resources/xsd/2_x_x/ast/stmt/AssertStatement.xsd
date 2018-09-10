@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Statement.xsd"/>
+    <xs:include schemaLocation="../expr/BooleanExpression.xsd"/>
+    <xs:include schemaLocation="../expr/Expression.xsd"/>
+    <xs:complexType name="AssertStatement">
+        <xs:complexContent>
+            <xs:extension base="Statement">
+                <xs:sequence>
+                    <xs:element name="booleanExpression" type="BooleanExpression"/>
+                    <xs:element name="messageExpression" type="Expression"/>
+                </xs:sequence>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

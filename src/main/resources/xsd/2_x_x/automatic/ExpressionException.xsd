@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Exception.xsd"/>
+    <xs:complexType name="ExpressionException">
+        <xs:complexContent>
+            <xs:extension base="Exception"/>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>
