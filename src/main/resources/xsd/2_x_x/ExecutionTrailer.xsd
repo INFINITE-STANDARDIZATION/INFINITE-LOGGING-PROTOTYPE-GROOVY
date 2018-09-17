@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="Event.xsd"/>
+    <xs:include schemaLocation="ExecutionStatus.xsd"/>
+    <xs:complexType name="ExecutionTrailer">
+        <xs:attribute use="required" type="xs:dateTime" name="endDateTime"/>
+        <xs:attribute use="required" type="ExecutionStatus" name="executionStatus"/>
+        <xs:attribute use="required" type="xs:integer" name="elapsedTime"/>
+    </xs:complexType>
+</xs:schema>

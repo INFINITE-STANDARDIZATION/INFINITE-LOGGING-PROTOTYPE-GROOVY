@@ -3,15 +3,19 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="BaseEvent.xsd"/>
+    <xs:include schemaLocation="Event.xsd"/>
     <xs:include schemaLocation="Object.xsd"/>
     <xs:complexType name="Message">
         <xs:complexContent>
-            <xs:extension base="BaseEvent">
+            <xs:extension base="Event">
                 <xs:sequence>
                     <xs:element name="trace" type="Object" minOccurs="0" maxOccurs="unbounded"/>
                 </xs:sequence>
                 <xs:attribute use="required" name="message" type="xs:string"/>
+                <xs:attribute name="className" type="xs:string"/>
+                <xs:attribute name="methodName" type="xs:string"/>
+                <xs:attribute name="lineNumber" type="xs:integer"/>
+                <xs:attribute use="required" name="dateTime" type="xs:dateTime"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

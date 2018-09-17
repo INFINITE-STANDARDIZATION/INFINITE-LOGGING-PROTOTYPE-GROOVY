@@ -3,8 +3,8 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="BaseLogEntry.xsd"/>
-    <xs:simpleType name="EventStatus">
+    <xs:include schemaLocation="Event.xsd"/>
+    <xs:simpleType name="ExecutionStatus">
         <xs:restriction base="xs:string">
             <xs:enumeration value="normal"/>
             <xs:enumeration value="unhandledException"/>

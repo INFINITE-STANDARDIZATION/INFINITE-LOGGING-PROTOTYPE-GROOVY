@@ -5,12 +5,12 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="../ast/MethodNode.xsd"/>
     <xs:include schemaLocation="../Object.xsd"/>
-    <xs:include schemaLocation="RuntimeEvent.xsd"/>
+    <xs:include schemaLocation="../Execution.xsd"/>
     <xs:complexType name="MethodExecution">
         <xs:complexContent>
-            <xs:extension base="RuntimeEvent">
+            <xs:extension base="Execution">
                 <xs:sequence>
-                    <xs:element type="MethodNode" name="method" minOccurs="0"/>
+                    <xs:element type="MethodNode" name="methodNode" minOccurs="0"/>
                     <xs:element type="Object" name="methodArgument" minOccurs="0" maxOccurs="unbounded"/>
                     <xs:element type="Object" name="methodResult" minOccurs="0"/>
                 </xs:sequence>

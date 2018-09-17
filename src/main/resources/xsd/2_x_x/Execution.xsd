@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="ast/MethodNode.xsd"/>
+    <xs:include schemaLocation="ExecutionTrailer.xsd"/>
+    <xs:include schemaLocation="Event.xsd"/>
+    <xs:complexType abstract="true" name="Execution">
+        <xs:complexContent>
+            <xs:extension base="Event">
+                <xs:sequence>
+                    <xs:element type="Event" name="event" minOccurs="0" maxOccurs="unbounded"/>
+                    <xs:element type="ExecutionTrailer" name="executionTrailer" minOccurs="0"/>
+                </xs:sequence>
+                <xs:attribute use="required" name="startDateTime" type="xs:dateTime"/>
+            </xs:extension>
+        </xs:complexContent>
+    </xs:complexType>
+</xs:schema>

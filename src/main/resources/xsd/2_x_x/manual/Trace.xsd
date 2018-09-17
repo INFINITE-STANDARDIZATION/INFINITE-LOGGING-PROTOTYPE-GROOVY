@@ -3,11 +3,11 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="../BaseLogEntry.xsd"/>
+    <xs:include schemaLocation="../Event.xsd"/>
     <xs:include schemaLocation="../Object.xsd"/>
     <xs:complexType name="Trace">
         <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
+            <xs:extension base="Event">
                 <xs:sequence>
                     <xs:element name="trace" type="Object" minOccurs="0" maxOccurs="unbounded"/>
                 </xs:sequence>

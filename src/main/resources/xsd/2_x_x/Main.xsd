@@ -4,13 +4,11 @@
         xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
         xmlns:xs="http://www.w3.org/2001/XMLSchema"
         elementFormDefault="qualified">
-    <xs:include schemaLocation="BaseLogEntry.xsd"/>
-    <xs:include schemaLocation="RuntimeLogEntry.xsd"/>
     <!---->
+    <xs:include schemaLocation="Event.xsd"/>
     <xs:include schemaLocation="./ast/stmt/BlockStatement.xsd"/>
     <xs:include schemaLocation="./Object.xsd"/>
     <xs:include schemaLocation="./ast/expr/TernaryExpression.xsd"/>
-    <xs:include schemaLocation="./RuntimeLogEntry.xsd"/>
     <xs:include schemaLocation="./automatic/MethodExecution.xsd"/>
     <xs:include schemaLocation="./ast/stmt/ReturnStatement.xsd"/>
     <xs:include schemaLocation="./manual/Error.xsd"/>
@@ -19,14 +17,13 @@
     <xs:include schemaLocation="./ast/expr/UnaryPlusExpression.xsd"/>
     <xs:include schemaLocation="./ast/stmt/AssertStatement.xsd"/>
     <xs:include schemaLocation="./ast/expr/UnaryMinusExpression.xsd"/>
-    <xs:include schemaLocation="./BaseEvent.xsd"/>
     <xs:include schemaLocation="./ast/expr/AnnotationConstantExpression.xsd"/>
     <xs:include schemaLocation="./ast/expr/StaticMethodCallExpression.xsd"/>
     <xs:include schemaLocation="./ast/Parameter.xsd"/>
     <xs:include schemaLocation="./ast/stmt/DoWhileStatement.xsd"/>
     <xs:include schemaLocation="./manual/Info.xsd"/>
     <xs:include schemaLocation="./ast/expr/ClassExpression.xsd"/>
-    <xs:include schemaLocation="./EventStatus.xsd"/>
+    <xs:include schemaLocation="ExecutionStatus.xsd"/>
     <xs:include schemaLocation="./ast/stmt/Statement.xsd"/>
     <xs:include schemaLocation="./manual/Trace.xsd"/>
     <xs:include schemaLocation="./ast/stmt/EmptyStatement.xsd"/>
@@ -66,7 +63,7 @@
     <xs:include schemaLocation="./ast/expr/BinaryExpression.xsd"/>
     <xs:include schemaLocation="./ast/expr/TupleExpression.xsd"/>
     <xs:include schemaLocation="./ast/expr/MethodPointerExpression.xsd"/>
-    <xs:include schemaLocation="./automatic/RuntimeEvent.xsd"/>
+    <xs:include schemaLocation="Execution.xsd"/>
     <xs:include schemaLocation="./ast/FieldNode.xsd"/>
     <xs:include schemaLocation="./ast/expr/ElvisOperatorExpression.xsd"/>
     <xs:include schemaLocation="./automatic/ExpressionException.xsd"/>
@@ -88,92 +85,9 @@
     <xs:include schemaLocation="./ast/expr/AttributeExpression.xsd"/>
     <xs:include schemaLocation="./automatic/MethodException.xsd"/>
     <xs:include schemaLocation="./ast/expr/PropertyExpression.xsd"/>
-    <xs:include schemaLocation="./EventTrailer.xsd"/>
+    <xs:include schemaLocation="ASTObjectTrace.xsd"/>
+    <xs:include schemaLocation="ExecutionTrailer.xsd"/>
+    <xs:include schemaLocation="Log.xsd"/>
     <!---->
-    <xs:complexType name="ThreadHeader">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="xs:string" name="threadName" />
-                <xs:attribute use="required" type="xs:integer" name="threadId" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:complexType name="ProcessHeader">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="xs:string" name="programName" />
-                <xs:attribute use="required" type="xs:string" name="programVersion" />
-                <xs:attribute use="required" type="xs:integer" name="processId" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:complexType name="FileHeader">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="xs:string" name="previousFilename" />
-                <xs:attribute use="required" type="xs:string" name="currentFilename" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:simpleType name="ThreadStatus">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="running"/>
-            <xs:enumeration value="completed"/>
-            <xs:enumeration value="terminated"/>
-            <xs:enumeration value="crashed"/>
-        </xs:restriction>
-    </xs:simpleType>
-    <xs:complexType name="ThreadTrailer">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="ThreadStatus" name="threadStatus" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:simpleType name="ProcessStatus">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="running"/>
-            <xs:enumeration value="completed"/>
-            <xs:enumeration value="terminated"/>
-            <xs:enumeration value="crashed"/>
-        </xs:restriction>
-    </xs:simpleType>
-    <xs:complexType name="ProcessTrailer">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="ProcessStatus" name="processStatus" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:simpleType name="LogStatus">
-        <xs:restriction base="xs:string">
-            <xs:enumeration value="rotated"/>
-            <xs:enumeration value="stopped"/>
-        </xs:restriction>
-    </xs:simpleType>
-    <xs:complexType name="FileTrailer">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:attribute use="required" type="LogStatus" name="logStatus" />
-                <xs:attribute use="required" type="xs:string" name="currentFileName" />
-                <xs:attribute use="required" type="xs:string" name="nextFileName" />
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
-    <xs:complexType name="Log">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry">
-                <xs:sequence>
-                    <xs:element name="fileHeader" type="FileHeader"/>
-                    <xs:element name="processHeader" type="ProcessHeader"/>
-                    <xs:element name="threadHeader" type="ThreadHeader"/>
-                    <xs:element name="runtimeLogEntry" type="RuntimeLogEntry" minOccurs="0" maxOccurs="unbounded"/>
-                    <xs:element name="threadTrailer" type="ThreadTrailer"/>
-                    <xs:element name="processTrailer" type="ProcessTrailer"/>
-                    <xs:element name="fileTrailer" type="FileTrailer"/>
-                </xs:sequence>
-            </xs:extension>
-        </xs:complexContent>
-    </xs:complexType>
     <xs:element name="log" type="Log"/>
 </xs:schema>

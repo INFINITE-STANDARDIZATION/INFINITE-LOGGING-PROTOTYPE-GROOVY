@@ -3,10 +3,11 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="BaseLogEntry.xsd"/>
-    <xs:complexType abstract="true" name="RuntimeLogEntry">
-        <xs:complexContent>
-            <xs:extension base="BaseLogEntry"/>
-        </xs:complexContent>
-    </xs:complexType>
+    <xs:simpleType name="LogStatus">
+        <xs:restriction base="xs:string">
+            <xs:enumeration value="rotated"/>
+            <xs:enumeration value="stopped"/>
+            <xs:enumeration value="abandoned"/>
+        </xs:restriction>
+    </xs:simpleType>
 </xs:schema>

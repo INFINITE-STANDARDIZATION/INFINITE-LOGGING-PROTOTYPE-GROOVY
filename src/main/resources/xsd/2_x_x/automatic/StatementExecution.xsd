@@ -4,10 +4,10 @@
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="../ast/stmt/Statement.xsd"/>
-    <xs:include schemaLocation="RuntimeEvent.xsd"/>
+    <xs:include schemaLocation="../Execution.xsd"/>
     <xs:complexType name="StatementExecution">
         <xs:complexContent>
-            <xs:extension base="RuntimeEvent">
+            <xs:extension base="Execution">
                 <xs:sequence>
                     <xs:element type="Statement" name="statement" minOccurs="0"/>
                 </xs:sequence>
