@@ -7,7 +7,7 @@
     <!---->
     <xs:include schemaLocation="Event.xsd"/>
     <xs:include schemaLocation="./ast/stmt/BlockStatement.xsd"/>
-    <xs:include schemaLocation="./Object.xsd"/>
+    <xs:include schemaLocation="Trace.xsd"/>
     <xs:include schemaLocation="./ast/expr/TernaryExpression.xsd"/>
     <xs:include schemaLocation="./automatic/MethodExecution.xsd"/>
     <xs:include schemaLocation="./ast/stmt/ReturnStatement.xsd"/>
@@ -25,7 +25,7 @@
     <xs:include schemaLocation="./ast/expr/ClassExpression.xsd"/>
     <xs:include schemaLocation="ExecutionStatus.xsd"/>
     <xs:include schemaLocation="./ast/stmt/Statement.xsd"/>
-    <xs:include schemaLocation="./manual/Trace.xsd"/>
+    <xs:include schemaLocation="./manual/Traces.xsd"/>
     <xs:include schemaLocation="./ast/stmt/EmptyStatement.xsd"/>
     <xs:include schemaLocation="./ast/expr/MethodCallExpression.xsd"/>
     <xs:include schemaLocation="./ast/stmt/SwitchStatement.xsd"/>
@@ -85,7 +85,9 @@
     <xs:include schemaLocation="./ast/expr/AttributeExpression.xsd"/>
     <xs:include schemaLocation="./automatic/MethodException.xsd"/>
     <xs:include schemaLocation="./ast/expr/PropertyExpression.xsd"/>
-    <xs:include schemaLocation="ASTObjectTrace.xsd"/>
+    <xs:include schemaLocation="ASTTrace.xsd"/>
+    <xs:include schemaLocation="MapTrace.xsd"/>
+    <xs:include schemaLocation="ListTrace.xsd"/>
     <xs:include schemaLocation="ExecutionTrailer.xsd"/>
     <xs:include schemaLocation="Log.xsd"/>
     <!---->

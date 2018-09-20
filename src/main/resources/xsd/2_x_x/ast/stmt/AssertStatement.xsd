@@ -10,8 +10,8 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="booleanExpression" type="BooleanExpression"/>
-                    <xs:element name="messageExpression" type="Expression"/>
+                    <xs:element minOccurs="0" name="booleanExpression" type="BooleanExpression"/>
+                    <xs:element minOccurs="0" name="messageExpression" type="Expression"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

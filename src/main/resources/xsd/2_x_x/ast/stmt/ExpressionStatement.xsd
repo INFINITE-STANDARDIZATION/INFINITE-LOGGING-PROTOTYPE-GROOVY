@@ -9,7 +9,7 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="expression" type="Expression"/>
+                    <xs:element minOccurs="0" name="expression" type="Expression"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

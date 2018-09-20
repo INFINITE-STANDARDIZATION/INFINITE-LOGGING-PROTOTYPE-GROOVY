@@ -9,8 +9,8 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="booleanExpression" type="BooleanExpression"/>
-                    <xs:element name="loopBlock" type="Statement"/>
+                    <xs:element minOccurs="0" name="booleanExpression" type="BooleanExpression"/>
+                    <xs:element minOccurs="0" name="loopBlock" type="Statement"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

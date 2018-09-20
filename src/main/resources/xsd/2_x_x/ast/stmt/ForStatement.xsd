@@ -10,9 +10,9 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="variable" type="Parameter"/>
-                    <xs:element name="collectionExpression" type="Expression"/>
-                    <xs:element name="loopBlock" type="Statement"/>
+                    <xs:element minOccurs="0" name="variable" type="Parameter"/>
+                    <xs:element minOccurs="0" name="collectionExpression" type="Expression"/>
+                    <xs:element minOccurs="0" name="loopBlock" type="Statement"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

@@ -14,8 +14,8 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="variable" type="Parameter"/>
-                    <xs:element name="code" type="Statement"/>
+                    <xs:element minOccurs="0" name="variable" type="Parameter"/>
+                    <xs:element minOccurs="0" name="code" type="Statement"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

@@ -10,7 +10,7 @@
         <xs:complexContent>
             <xs:extension base="AnnotatedNode">
                 <xs:sequence>
-                <xs:element name="field" type="FieldNode"/>
+                <xs:element minOccurs="0" name="field" type="FieldNode"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

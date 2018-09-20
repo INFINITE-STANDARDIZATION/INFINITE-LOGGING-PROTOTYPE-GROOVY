@@ -12,7 +12,7 @@
                 <xs:sequence>
                     <xs:element name="mapEntryExpressions" type="MapEntryExpressionList" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute use="required" name="verbatimText" type="xs:string"/>
+                <xs:attribute name="verbatimText" type="xs:string"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

@@ -8,7 +8,7 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="statements" type="StatementList"/>
+                    <xs:element minOccurs="0" name="statements" type="StatementList"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

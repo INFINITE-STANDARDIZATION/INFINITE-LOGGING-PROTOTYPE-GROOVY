@@ -9,7 +9,7 @@
     <xs:complexType name="MethodNode">
         <xs:complexContent>
             <xs:extension base="AnnotatedNode">
-                <xs:attribute use="required" name="name" type="xs:string" />
+                <xs:attribute name="name" type="xs:string" />
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

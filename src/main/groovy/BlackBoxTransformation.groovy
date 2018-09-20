@@ -1,9 +1,13 @@
 package groovy
 
+
 import groovy.transform.ToString
-import groovy.util.logging.Slf4j
 import org.codehaus.groovy.ast.ASTNode
+import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.MethodNode
+import org.codehaus.groovy.ast.expr.ConstantExpression
+import org.codehaus.groovy.ast.expr.PropertyExpression
+import org.codehaus.groovy.ast.stmt.BlockStatement
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
@@ -22,21 +26,32 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     void visit(ASTNode[] iAstNodeArray, SourceUnit iSourceUnit) {
         final String LMETHODNAME = "visit"
         try {
-            MethodNode
-            ASTNode methodNode = iAstNodeArray[1]
+            MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
             blackBoxEngine.logOpen(className, methodName)
             blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className":className, "methodName":methodName, "methodNode.getCode()": methodNode.getCode()])
             BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor()
             methodNode.getCode().visit(blackBoxVisitor)
+            BlackBoxLevel blackBoxLevel = getBlackBoxLevel(iAstNodeArray[0])
+            BlockStatement decoratedMethodNodeBlockStatement = new BlockStatement()
+            decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.decorateMethod(methodNode, blackBoxLevel))
+            methodNode.setCode(decoratedMethodNodeBlockStatement)
+            blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getCode())
         } catch (Throwable throwable) {
-            blackBoxEngine.logMethodException(throwable)
+            blackBoxEngine.methodException(throwable)
             throw throwable
         } finally {
             blackBoxEngine.methodExecutionClose()
             blackBoxEngine.logClose()
         }
+    }
+
+    static BlackBoxLevel getBlackBoxLevel(ASTNode iAnnotationNode) {
+        AnnotationNode annotationNode = iAnnotationNode as AnnotationNode
+        PropertyExpression propertyExpression = annotationNode.getMember("blackBoxLevel") as PropertyExpression
+        ConstantExpression constantExpression = propertyExpression.getProperty() as ConstantExpression
+        return constantExpression.getValue() as BlackBoxLevel
     }
 
 }

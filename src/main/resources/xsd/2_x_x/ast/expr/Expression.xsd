@@ -14,7 +14,7 @@
         <xs:complexContent>
             <xs:extension base="AnnotatedNode">
                 <xs:sequence>
-                    <xs:element name="type" type="ClassNode"/>
+                    <xs:element name="type" type="ClassNode" minOccurs="0"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

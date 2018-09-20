@@ -15,14 +15,14 @@
                 <xs:sequence>
                     <xs:element name="expression" type="Expression" minOccurs="0"/>
                     <xs:choice>
-                        <xs:element name="accessedVariableExpression" type="VariableExpression"/>
-                        <xs:element name="accessedFieldNode" type="FieldNode"/>
-                        <xs:element name="accessedPropertyNode" type="PropertyNode"/>
-                        <xs:element name="accessedParameter" type="Parameter"/>
+                        <xs:element minOccurs="0" name="accessedVariableExpression" type="VariableExpression"/>
+                        <xs:element minOccurs="0" name="accessedFieldNode" type="FieldNode"/>
+                        <xs:element minOccurs="0" name="accessedPropertyNode" type="PropertyNode"/>
+                        <xs:element minOccurs="0" name="accessedParameter" type="Parameter"/>
                     </xs:choice>
                 </xs:sequence>
-                <xs:attribute use="required" name="variable" type="xs:string"/>
-                <xs:attribute use="required" name="inStaticContext" type="xs:boolean"/>
+                <xs:attribute name="variable" type="xs:string"/>
+                <xs:attribute name="inStaticContext" type="xs:boolean"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

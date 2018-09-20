@@ -5,13 +5,13 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="../ast/expr/Expression.xsd"/>
     <xs:include schemaLocation="../Execution.xsd"/>
-    <xs:include schemaLocation="../Object.xsd"/>
+    <xs:include schemaLocation="../Trace.xsd"/>
     <xs:complexType name="ExpressionEvaluation">
         <xs:complexContent>
             <xs:extension base="Execution">
                 <xs:sequence>
                     <xs:element type="Expression" name="expression" minOccurs="0"/>
-                    <xs:element type="Object" name="expressionResult" minOccurs="0"/>
+                    <xs:element type="Trace" name="expressionResult" minOccurs="0"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

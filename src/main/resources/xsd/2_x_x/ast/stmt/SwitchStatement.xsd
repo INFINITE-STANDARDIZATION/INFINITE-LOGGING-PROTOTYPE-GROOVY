@@ -9,9 +9,9 @@
         <xs:complexContent>
             <xs:extension base="Statement">
                 <xs:sequence>
-                    <xs:element name="expression" type="Expression"/>
-                    <xs:element name="caseStatements" type="CaseStatementList"/>
-                    <xs:element name="defaultStatement" type="Statement"/>
+                    <xs:element minOccurs="0" name="expression" type="Expression"/>
+                    <xs:element minOccurs="0" name="caseStatements" type="CaseStatementList"/>
+                    <xs:element minOccurs="0" name="defaultStatement" type="Statement"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

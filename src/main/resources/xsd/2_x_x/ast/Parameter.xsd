@@ -16,12 +16,12 @@
         <xs:complexContent>
             <xs:extension base="AnnotatedNode">
                 <xs:sequence>
-                    <xs:element name="type" type="ClassNode"/>
-                    <xs:element name="defaultValue" type="Expression"/>
+                    <xs:element minOccurs="0" name="type" type="ClassNode"/>
+                    <xs:element minOccurs="0" name="defaultValue" type="Expression"/>
                 </xs:sequence>
-                <xs:attribute use="required" name="name" type="xs:string"/>
-                <xs:attribute use="required" name="hasDefaultValue" type="xs:boolean"/>
-                <xs:attribute use="required" name="inStaticContext" type="xs:boolean"/>
+                <xs:attribute name="name" type="xs:string"/>
+                <xs:attribute name="hasDefaultValue" type="xs:boolean"/>
+                <xs:attribute name="inStaticContext" type="xs:boolean"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

@@ -12,7 +12,7 @@
                     <xs:element name="from" type="Expression" minOccurs="0"/>
                     <xs:element name="to" type="Expression" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute use="required" name="inclusive" type="xs:boolean"/>
+                <xs:attribute name="inclusive" type="xs:boolean"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

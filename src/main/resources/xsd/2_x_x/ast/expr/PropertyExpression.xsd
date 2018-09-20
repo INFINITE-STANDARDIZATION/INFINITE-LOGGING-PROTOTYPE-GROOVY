@@ -12,7 +12,7 @@
                     <xs:element name="operation" type="Expression" minOccurs="0"/>
                     <xs:element name="property" type="Expression" minOccurs="0"/>
                 </xs:sequence>
-                <xs:attribute use="required" name="isStatic" type="xs:boolean"/>
+                <xs:attribute name="isStatic" type="xs:boolean"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

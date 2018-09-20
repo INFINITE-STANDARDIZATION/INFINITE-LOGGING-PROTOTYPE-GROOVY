@@ -11,5 +11,5 @@ import java.lang.annotation.Target
 @Retention(RetentionPolicy.RUNTIME)
 @GroovyASTTransformationClass("groovy.BlackBoxTransformation")
 @interface BlackBox {
-    String value() default ""
+    BlackBoxLevel blackBoxLevel() default BlackBoxLevel.METHOD
 }

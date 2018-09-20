@@ -2,34 +2,55 @@ package groovy
 
 import com.thoughtworks.xstream.XStream
 import groovy.inspect.swingui.AstNodeToScriptVisitor
-import infinite_logging.prototype.groovy.XMLASTObjectTrace
-import infinite_logging.prototype.groovy.XMLObject
+import infinite_logging.prototype.groovy.XMLASTTrace
+import infinite_logging.prototype.groovy.XMLListTrace
+import infinite_logging.prototype.groovy.XMLMapEntry
+import infinite_logging.prototype.groovy.XMLMapTrace
+import infinite_logging.prototype.groovy.XMLTrace
 import org.codehaus.groovy.ast.ASTNode
 
 class TraceSerializer {
 
-    static XMLObject createXMLObjectTrace(String iTraceName, Object iTrace) {
-        XMLObject xmlObject
+    static XMLTrace createXMLTraceTrace(String iTraceName, Object iTrace) {
+        XMLTrace xMLTrace
         if (iTrace instanceof ASTNode) {
-            xmlObject = new XMLASTObjectTrace()
+            xMLTrace = new XMLASTTrace()
             StringWriter stringWriter = new StringWriter()
             iTrace.visit(new AstNodeToScriptVisitor(stringWriter))
-            xmlObject.setSerializedRepresentation(stringWriter.getBuffer().toString().replace("\$", ""))
-            xmlObject.setColumnNumber(iTrace.getColumnNumber() as BigInteger)
-            xmlObject.setLastColumnNumber(iTrace.getLastColumnNumber() as BigInteger)
-            xmlObject.setLineNumber(iTrace.getLineNumber() as BigInteger)
-            xmlObject.setLastLineNumber(iTrace.getLastLineNumber() as BigInteger)
+            xMLTrace.setSerializedRepresentation(stringWriter.getBuffer().toString().replace("\$", ""))
+            xMLTrace.setColumnNumber(iTrace.getColumnNumber() as BigInteger)
+            xMLTrace.setLastColumnNumber(iTrace.getLastColumnNumber() as BigInteger)
+            xMLTrace.setLineNumber(iTrace.getLineNumber() as BigInteger)
+            xMLTrace.setLastLineNumber(iTrace.getLastLineNumber() as BigInteger)
+        } else if (iTrace instanceof Map) {
+            xMLTrace = new XMLMapTrace()
+            xMLTrace.setSize(iTrace.size() as BigInteger)
+            for (key in iTrace.keySet()) {
+                XMLTrace xMLTraceKey = createXMLTraceTrace("key", key)
+                XMLTrace xMLTraceValue = createXMLTraceTrace("value", iTrace.get(key))
+                XMLMapEntry xmlMapEntry = new XMLMapEntry()
+                xmlMapEntry.setKey(xMLTraceKey)
+                xmlMapEntry.setValue(xMLTraceValue)
+                xMLTrace.getMapEntry().add(xmlMapEntry)
+            }
+        }  else if (iTrace instanceof List) {
+            xMLTrace = new XMLListTrace()
+            xMLTrace.setSize(iTrace.size() as BigInteger)
+            iTrace.eachWithIndex { Object listEntry, Integer index ->
+                XMLTrace xMLTraceValue = createXMLTraceTrace(index.toString(), listEntry)
+                ((XMLListTrace)xMLTrace).getCollectionElement().add(xMLTraceValue)
+            }
         } else {
-            xmlObject = new XMLObject()
+            xMLTrace = new XMLTrace()
             if (iTrace instanceof XStreamSuitable) {
-                xmlObject.setSerializedRepresentation(new XStream().toXML(iTrace))
+                xMLTrace.setSerializedRepresentation(new XStream().toXML(iTrace))
             } else {
-                xmlObject.setSerializedRepresentation(iTrace.toString())
+                xMLTrace.setSerializedRepresentation(iTrace.toString())
             }
         }
-        xmlObject.setVariableName(iTraceName)
-        xmlObject.setClassName(iTrace.getClass().getCanonicalName())
-        return xmlObject
+        xMLTrace.setVariableName(iTraceName)
+        xMLTrace.setClassName(iTrace.getClass().getCanonicalName())
+        return xMLTrace
     }
 
 }
