@@ -3,7 +3,6 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="ast/MethodNode.xsd"/>
     <xs:include schemaLocation="ExecutionTrailer.xsd"/>
     <xs:include schemaLocation="Event.xsd"/>
     <xs:complexType abstract="true" name="Execution">
@@ -14,6 +13,10 @@
                     <xs:element type="ExecutionTrailer" name="executionTrailer" minOccurs="0"/>
                 </xs:sequence>
                 <xs:attribute use="required" name="startDateTime" type="xs:dateTime"/>
+                <xs:attribute name="lineNumber" type="xs:integer"/>
+                <xs:attribute name="columnNumber" type="xs:integer"/>
+                <xs:attribute name="lastLineNumber" type="xs:integer"/>
+                <xs:attribute name="lastColumnNumber" type="xs:integer"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

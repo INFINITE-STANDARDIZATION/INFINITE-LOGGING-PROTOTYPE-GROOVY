@@ -8,12 +8,22 @@ import infinite_logging.prototype.groovy.XMLMapEntry
 import infinite_logging.prototype.groovy.XMLMapTrace
 import infinite_logging.prototype.groovy.XMLTrace
 import org.codehaus.groovy.ast.ASTNode
+import org.codehaus.groovy.ast.ClassNode
 
 class TraceSerializer {
 
     static XMLTrace createXMLTraceTrace(String iTraceName, Object iTrace) {
         XMLTrace xMLTrace
-        if (iTrace instanceof ASTNode) {
+        if (iTrace instanceof ClassNode) {
+            xMLTrace = new XMLASTTrace()
+            StringWriter stringWriter = new StringWriter()
+            new AstNodeToScriptVisitor(stringWriter).visitClass(iTrace)
+            xMLTrace.setSerializedRepresentation(stringWriter.getBuffer().toString().replace("\$", ""))
+            xMLTrace.setColumnNumber(iTrace.getColumnNumber() as BigInteger)
+            xMLTrace.setLastColumnNumber(iTrace.getLastColumnNumber() as BigInteger)
+            xMLTrace.setLineNumber(iTrace.getLineNumber() as BigInteger)
+            xMLTrace.setLastLineNumber(iTrace.getLastLineNumber() as BigInteger)
+        } else if (iTrace instanceof ASTNode) {
             xMLTrace = new XMLASTTrace()
             StringWriter stringWriter = new StringWriter()
             iTrace.visit(new AstNodeToScriptVisitor(stringWriter))

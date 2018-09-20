@@ -8,6 +8,7 @@ import org.codehaus.groovy.ast.MethodNode
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
+import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
@@ -33,11 +34,15 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className":className, "methodName":methodName, "methodNode.getCode()": methodNode.getCode()])
             BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor()
             methodNode.getCode().visit(blackBoxVisitor)
-            BlackBoxLevel blackBoxLevel = getBlackBoxLevel(iAstNodeArray[0])
+            AnnotationNode annotationNode = iAstNodeArray[0] as AnnotationNode
+            BlackBoxLevel blackBoxLevel = getBlackBoxLevel(annotationNode)
             BlockStatement decoratedMethodNodeBlockStatement = new BlockStatement()
-            decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.decorateMethod(methodNode, blackBoxLevel))
+            decoratedMethodNodeBlockStatement.setSourcePosition(methodNode.getCode())
+            decoratedMethodNodeBlockStatement.copyNodeMetaData(methodNode.getCode())
+            decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.createLoggerDeclaration())
+            decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.decorateMethod(methodNode, blackBoxLevel, annotationNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
-            blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getCode())
+            blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getDeclaringClass())
         } catch (Throwable throwable) {
             blackBoxEngine.methodException(throwable)
             throw throwable

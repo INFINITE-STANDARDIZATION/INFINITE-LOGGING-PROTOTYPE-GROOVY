@@ -3,13 +3,12 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="Statement.xsd"/>
-    <xs:include schemaLocation="../expr/Expression.xsd"/>
-    <xs:complexType name="ReturnStatement">
+    <xs:include schemaLocation="../Execution.xsd"/>
+    <xs:complexType name="ExecutionWithCode">
         <xs:complexContent>
-            <xs:extension base="Statement">
+            <xs:extension base="Execution">
                 <xs:sequence>
-                    <xs:element minOccurs="0" name="expression" type="Expression"/>
+                    <xs:element name="restoredScriptCode" type="xs:string"/>
                 </xs:sequence>
             </xs:extension>
         </xs:complexContent>

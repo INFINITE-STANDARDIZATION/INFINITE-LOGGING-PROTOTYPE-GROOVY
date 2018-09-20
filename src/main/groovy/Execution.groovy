@@ -12,6 +12,7 @@ class Execution {
     Date startDate = new Date()
     Date endDate
     Throwable throwable
+    //todo: result
 
     Execution(XMLExecution xmlExecution, Execution parentExecution) {
         this.xmlExecution = xmlExecution

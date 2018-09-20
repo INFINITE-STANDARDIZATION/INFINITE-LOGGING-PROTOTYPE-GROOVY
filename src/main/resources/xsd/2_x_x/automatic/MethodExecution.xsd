@@ -3,7 +3,6 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="../ast/MethodNode.xsd"/>
     <xs:include schemaLocation="../Trace.xsd"/>
     <xs:include schemaLocation="../Execution.xsd"/>
     <xs:include schemaLocation="../automatic/MethodException.xsd"/>
@@ -11,11 +10,12 @@
         <xs:complexContent>
             <xs:extension base="Execution">
                 <xs:sequence>
-                    <xs:element type="MethodNode" name="methodNode" minOccurs="0"/>
                     <xs:element type="Trace" name="methodArgument" minOccurs="0" maxOccurs="unbounded"/>
                     <xs:element type="MethodException" name="methodException" minOccurs="0"/>
                     <xs:element type="Trace" name="methodResult" minOccurs="0"/>
                 </xs:sequence>
+                <xs:attribute name="methodName" type="xs:string" use="required"/>
+                <xs:attribute name="className" type="xs:string" use="required"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

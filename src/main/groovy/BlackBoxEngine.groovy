@@ -5,10 +5,14 @@ import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.codehaus.groovy.ast.ASTNode
+import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.ClassHelper
+import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.ast.MethodNode
 import org.codehaus.groovy.ast.Parameter
 import org.codehaus.groovy.ast.builder.AstBuilder
+import org.codehaus.groovy.ast.expr.ArgumentListExpression
+import org.codehaus.groovy.ast.expr.ConstructorCallExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
 import org.codehaus.groovy.ast.stmt.EmptyStatement
 import org.codehaus.groovy.ast.stmt.Statement
@@ -44,7 +48,8 @@ class BlackBoxEngine {
             blackBoxEngine = new BlackBoxEngine()
             String blackBoxConfFileName = System.getProperty("blackBoxConfFileName")
             if (blackBoxConfFileName == null) {
-                blackBoxConfFileName = "src/main/resources/groovy/BlackBox.config"
+                System.out.println("Prop missing")
+                blackBoxConfFileName = "resources/BlackBox.config"
             }
             blackBoxEngine.configObject = new ConfigSlurper().parse(new File(blackBoxConfFileName).toURI().toURL())
             blackBoxEngineThreadLocal.set(blackBoxEngine)
@@ -66,7 +71,7 @@ class BlackBoxEngine {
         }
     }
 
-    static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel) {
+    static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         Statement methodCodeStatement = iMethodNode.getCode()
         Parameter[] methodParameters = iMethodNode.getParameters()
         BlockStatement decoratedBlockStatement = new BlockStatement()
@@ -74,35 +79,41 @@ class BlackBoxEngine {
         tryBlock.addStatement(methodCodeStatement)
         Statement finallyBlock
         if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-            decoratedBlockStatement.addStatement(text2statement("""groovy.BlackBoxEngine.getInstance().methodExecutionOpen("${iMethodNode.getDeclaringClass().getNameWithoutPackage()}", "${iMethodNode.getDeclaringClass().getPackageName()}", "${iMethodNode.getName()}" %s)""", methodParameters))
-            finallyBlock = text2statement("groovy.BlackBoxEngine.getInstance().methodExecutionClose()")
-            decoratedBlockStatement.addStatement(createTryCatch("groovy.BlackBoxEngine.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters))
+            decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().methodExecutionOpen("${iMethodNode.getDeclaringClass().getNameWithoutPackage()}", "${iMethodNode.getDeclaringClass().getPackageName()}", "${iMethodNode.getName()}" %s)""", methodParameters))
+            finallyBlock = text2statement("automaticBlackBox.getInstance().methodExecutionClose()")
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else if (iBlackBoxLevel == BlackBoxLevel.ERROR) {
             finallyBlock = new EmptyStatement()
-            decoratedBlockStatement.addStatement(createTryCatch("groovy.BlackBoxEngine.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters))
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else {
             return methodCodeStatement
         }
         return decoratedBlockStatement
     }
 
-    static TryCatchStatement createTryCatch(String iLogErrorCodeLine, BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters) {
+
+    static Statement createLoggerDeclaration() {
+        //Workaround of: https://issues.apache.org/jira/browse/GROOVY-4927
+        return GeneralUtils.declS(GeneralUtils.varX("automaticBlackBox"), new ConstructorCallExpression(new ClassNode(BlackBoxEngine), new ArgumentListExpression()))
+    }
+
+    static TryCatchStatement createTryCatch(String iLogErrorCodeLine, BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters, AnnotationNode iAnnotationNode) {
         TryCatchStatement tryCatchStatement = new TryCatchStatement(iMainBlock, iFinallyBlock)
         BlockStatement throwBlock = new BlockStatement()
         throwBlock.addStatement(text2statement(iLogErrorCodeLine, iParameters))
-        throwBlock.addStatement(createRethrow())
+        throwBlock.addStatement(createThrowStatement(iAnnotationNode))
         tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "throwable"), throwBlock))
         return tryCatchStatement
     }
 
-    static Statement createRethrow() {
-        ThrowStatement l_throw_statement = GeneralUtils.throwS(GeneralUtils.varX("throwable"))
-        //l_throw_statement.setSourcePosition(p_annotation_node) TODO
-        return l_throw_statement
+    static Statement createThrowStatement(AnnotationNode iAnnotationNode) {
+        ThrowStatement throwStatement = GeneralUtils.throwS(GeneralUtils.varX("throwable"))
+        iAnnotationNode.setSourcePosition(iAnnotationNode)
+        return throwStatement
     }
 
     static Statement text2statement(String iCodeText, Parameter[] iParameters) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iCodeText": iCodeText, "i_parameters": iParameters])
+        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iCodeText": iCodeText, "iParameters": iParameters])
         try {
             String statementCode
             if (methodArgumentsPresent(iParameters)) {
@@ -112,7 +123,7 @@ class BlackBoxEngine {
                 }
                 statementCode = String.format(iCodeText, """, [${serializedParameters.join(",")}]""")
             } else {
-                statementCode = String.format(iCodeText, ", groovy.BlackBoxEngine.NOARGSMAP")
+                statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
             }
             List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, statementCode)
             return getInstance().methodResult("resultingStatements.first()", resultingStatements.first()) as Statement
@@ -125,21 +136,6 @@ class BlackBoxEngine {
 
     }
 
-    static Statement decorateStatement(Statement iStatement) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iStatement": iStatement])
-        try {
-            BlockStatement blockStatement = new BlockStatement()
-            blockStatement.addStatement(text2statement("groovy.BlackBoxEngine.getInstance().statementExecutionOpen()"))
-            blockStatement.addStatement(iStatement)
-            return getInstance().methodResult("iStatement", iStatement) as Statement
-        } catch (Throwable throwable) {
-            getInstance().methodException(throwable)
-            throw throwable
-        } finally {
-            getInstance().methodExecutionClose()
-        }
-    }
-
     static XMLGregorianCalendar getXMLGregorianCalendar(Date date = new Date()) {
         GregorianCalendar lGregorianCalendar = new GregorianCalendar()
         lGregorianCalendar.setTime(date)
@@ -147,36 +143,12 @@ class BlackBoxEngine {
         return lXMLGregorianCalendar
     }
 
-    void statementExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap) {
-        XMLMethodExecution xmlMethodExecution = new XMLMethodExecution()
-        execution = new Execution(xmlMethodExecution, execution)
-        xmlMethodExecution.setStartDateTime(getXMLGregorianCalendar(execution.getStartDate()))
-        XMLMethodNode xmlMethodNode = new XMLMethodNode()
-        xmlMethodNode.setName(iMethodName)
-        XMLClassNode xmlClassNode = new XMLClassNode()
-        xmlClassNode.setGetNameWithoutPackage(iClassSimpleName)
-        xmlClassNode.setGetPackageName(iPackageName)
-        xmlMethodNode.setDeclaringClass(xmlClassNode)
-        xmlMethodExecution.setMethodNode(xmlMethodNode)
-        for (methodArgumentName in methodArgumentMap.keySet()) {
-            XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentName, methodArgumentMap.get(methodArgumentName))
-            xmlMethodExecution.getMethodArgument().add(xMLTrace)
-        }
-        execution.getParentExecution().getXmlExecution().getEvent().add(xmlMethodExecution)
-        execution.setXmlMethodExecution(xmlMethodExecution)
-    }
-
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap) {
         XMLMethodExecution xmlMethodExecution = new XMLMethodExecution()
         execution = new Execution(xmlMethodExecution, execution)
         xmlMethodExecution.setStartDateTime(getXMLGregorianCalendar(execution.getStartDate()))
-        XMLMethodNode xmlMethodNode = new XMLMethodNode()
-        xmlMethodNode.setName(iMethodName)
-        XMLClassNode xmlClassNode = new XMLClassNode()
-        xmlClassNode.setGetNameWithoutPackage(iClassSimpleName)
-        xmlClassNode.setGetPackageName(iPackageName)
-        xmlMethodNode.setDeclaringClass(xmlClassNode)
-        xmlMethodExecution.setMethodNode(xmlMethodNode)
+        xmlMethodExecution.setMethodName(iMethodName)
+        xmlMethodExecution.setClassName(iPackageName + "." + iClassSimpleName)
         for (methodArgumentName in methodArgumentMap.keySet()) {
             XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentName, methodArgumentMap.get(methodArgumentName))
             xmlMethodExecution.getMethodArgument().add(xMLTrace)
