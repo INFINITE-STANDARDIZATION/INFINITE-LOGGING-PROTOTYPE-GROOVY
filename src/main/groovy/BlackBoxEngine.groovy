@@ -32,7 +32,7 @@ class BlackBoxEngine {
 
     public static ThreadLocal<BlackBoxEngine> blackBoxEngineThreadLocal = new ThreadLocal<BlackBoxEngine>()
 
-    Execution execution
+    XMLExecution xmlExecution
 
     ConfigObject configObject
 
@@ -45,6 +45,7 @@ class BlackBoxEngine {
     static BlackBoxEngine getInstance() {
         BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class)
         if (blackBoxEngine == null) {
+            XMLExecution.getMetaClass().parentExecution = null
             blackBoxEngine = new BlackBoxEngine()
             String blackBoxConfFileName = System.getProperty("blackBoxConfFileName")
             if (blackBoxConfFileName == null) {
@@ -80,11 +81,11 @@ class BlackBoxEngine {
         Statement finallyBlock
         if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
             decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().methodExecutionOpen("${iMethodNode.getDeclaringClass().getNameWithoutPackage()}", "${iMethodNode.getDeclaringClass().getPackageName()}", "${iMethodNode.getName()}" %s)""", methodParameters))
-            finallyBlock = text2statement("automaticBlackBox.getInstance().methodExecutionClose()")
-            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+            finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else if (iBlackBoxLevel == BlackBoxLevel.ERROR) {
             finallyBlock = new EmptyStatement()
-            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().methodException(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else {
             return methodCodeStatement
         }
@@ -126,12 +127,12 @@ class BlackBoxEngine {
                 statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
             }
             List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, statementCode)
-            return getInstance().methodResult("resultingStatements.first()", resultingStatements.first()) as Statement
+            return getInstance().result("resultingStatements.first()", resultingStatements.first()) as Statement
         } catch (Throwable throwable) {
-            getInstance().methodException(throwable)
+            getInstance().exception(throwable)
             throw throwable
         } finally {
-            getInstance().methodExecutionClose()
+            getInstance().executionClose()
         }
 
     }
@@ -144,79 +145,74 @@ class BlackBoxEngine {
     }
 
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap) {
-        XMLMethodExecution xmlMethodExecution = new XMLMethodExecution()
-        execution = new Execution(xmlMethodExecution, execution)
-        xmlMethodExecution.setStartDateTime(getXMLGregorianCalendar(execution.getStartDate()))
-        xmlMethodExecution.setMethodName(iMethodName)
-        xmlMethodExecution.setClassName(iPackageName + "." + iClassSimpleName)
+        if (xmlExecution == null) {
+            logOpen(iClassSimpleName, iPackageName, iMethodName)
+        }
+        XMLMethodExecution newXmlExecution = new XMLMethodExecution()
+        newXmlExecution.parentExecution = xmlExecution
+        newXmlExecution.setStartDateTime(getXMLGregorianCalendar())
+        newXmlExecution.setMethodName(iMethodName)
+        newXmlExecution.setClassName(iPackageName + "." + iClassSimpleName)
         for (methodArgumentName in methodArgumentMap.keySet()) {
             XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentName, methodArgumentMap.get(methodArgumentName))
-            xmlMethodExecution.getMethodArgument().add(xMLTrace)
+            newXmlExecution.getArgument().add(xMLTrace)
         }
-        execution.getParentExecution().getXmlExecution().getEvent().add(xmlMethodExecution)
-        execution.setXmlMethodExecution(xmlMethodExecution)
+        xmlExecution.getEvent().add(newXmlExecution)
+        xmlExecution = newXmlExecution
     }
 
     void executionClose() {
-        Date endDate = new Date()
-        execution.setEndDate(endDate)
         XMLExecutionTrailer xmlExecutionTrailer = new XMLExecutionTrailer()
-        xmlExecutionTrailer.setEndDateTime(getXMLGregorianCalendar(endDate))
-        if (execution.getThrowable() == null) {
+        xmlExecutionTrailer.setEndDateTime(getXMLGregorianCalendar())
+        if (xmlExecution.getException() == null) {
             xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.NORMAL)
         } else {
             xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.UNHANDLED_EXCEPTION)
         }
-        xmlExecutionTrailer.setElapsedTime(execution.getEndDate().getTime() - execution.getStartDate().getTime() as BigInteger)
-        execution.getXmlExecution().setExecutionTrailer(xmlExecutionTrailer)
-        execution = execution.getParentExecution()
+        xmlExecutionTrailer.setElapsedTime(xmlExecutionTrailer.getEndDateTime().toGregorianCalendar().getTimeInMillis() - xmlExecution.getStartDateTime().toGregorianCalendar().getTimeInMillis() as BigInteger)
+        xmlExecution.setExecutionTrailer(xmlExecutionTrailer)
+        if (xmlExecution.parentExecution == null) {
+            XMLLog xmlLog = getXmlExecution() as XMLLog
+            XMLLogTrailer xmlLogTrailer = new XMLLogTrailer()
+            xmlLogTrailer.setNextLogName(xmlLog.getCurrentLogName())
+            xmlLogTrailer.setLogStatus(XMLLogStatus.STOPPED)
+            xmlLog.setLogTrailer(xmlLogTrailer)
+            xmlLogTrailer.setDateTime(getXMLGregorianCalendar())
+            JAXBContext lJAXBContext = JAXBContext.newInstance(XMLLog.class)
+            Marshaller marshaller = lJAXBContext.createMarshaller()
+            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE)
+            StringWriter stringWriter = new StringWriter()
+            marshaller.marshal(new ObjectFactory().createLog(xmlLog), stringWriter)
+            String xmlString = stringWriter.toString()
+            log.debug(xmlString)
+        } else {
+            xmlExecution = xmlExecution.parentExecution
+        }
     }
 
-    void methodExecutionClose() {
-        executionClose()
-    }
-
-    void logOpen(String iClassName, String iMethodName) {
+    private void logOpen(String iClassSimpleName, String iPackageName, String iMethodName) {
         XMLLog xmlLog = new XMLLog()
-        execution = new Execution(xmlLog, execution)
-        xmlLog.setCurrentLogName(iClassName + "-" + iMethodName + ".log")
+        xmlExecution = xmlLog
+        xmlLog.setCurrentLogName(iPackageName + "." + iClassSimpleName + "-" + iMethodName + ".log")
         xmlLog.setPreviousLogName(xmlLog.getCurrentLogName())
         xmlLog.setProcessId(ManagementFactory.getRuntimeMXBean().getName())
         xmlLog.setProgramName("INFINITE-LOGGING-PROTOTYPE-GROOVY")
         xmlLog.setProgramVersion("2.0.0.PRE")
         xmlLog.setThreadId(Thread.currentThread().getId() as BigInteger)
         xmlLog.setThreadName(Thread.currentThread().getName())
-        xmlLog.setStartDateTime(getXMLGregorianCalendar(execution.getStartDate()))
+        xmlLog.setStartDateTime(getXMLGregorianCalendar())
     }
 
-    void logClose() {
-        XMLLog xmlLog = execution.getXmlExecution() as XMLLog
-        XMLLogTrailer xmlLogTrailer = new XMLLogTrailer()
-        xmlLogTrailer.setNextLogName(xmlLog.getCurrentLogName())
-        xmlLogTrailer.setLogStatus(XMLLogStatus.STOPPED)
-        xmlLog.setLogTrailer(xmlLogTrailer)
-        xmlLogTrailer.setDateTime(getXMLGregorianCalendar())
-        JAXBContext lJAXBContext = JAXBContext.newInstance(XMLLog.class)
-        Marshaller marshaller = lJAXBContext.createMarshaller()
-        marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE)
-        StringWriter stringWriter = new StringWriter()
-        marshaller.marshal(new ObjectFactory().createLog(xmlLog), stringWriter)
-        String xmlString = stringWriter.toString()
-        log.debug(xmlString)
-        executionClose()
-    }
-
-    Object methodResult(String iResultVariableName, Object iResult) {
+    Object result(String iResultVariableName, Object iResult) {
         XMLTrace xMLTraceResult = TraceSerializer.createXMLTraceTrace(iResultVariableName, iResult)
-        execution.getXmlMethodExecution().setMethodResult(xMLTraceResult)
+        xmlExecution.setResult(xMLTraceResult)
         return iResult
     }
 
-    void methodException(Throwable throwable) {
+    void exception(Throwable throwable) {
         XMLMethodException xmlMethodException = new XMLMethodException()
         xmlMethodException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
         xmlMethodException.setMessage(ExceptionUtils.getMessage(throwable))
-        execution.getXmlMethodExecution().setMethodException(xmlMethodException)
-        execution.setThrowable(throwable)
+        xmlExecution.setException(xmlMethodException)
     }
 }

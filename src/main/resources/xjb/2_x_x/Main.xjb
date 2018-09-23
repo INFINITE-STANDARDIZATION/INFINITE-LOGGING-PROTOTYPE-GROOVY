@@ -1,8 +1,14 @@
 <?xml version="1.0"?>
-<jxb:bindings version="1.0" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc" jxb:extensionBindingPrefixes="xjc"
-              xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<jxb:bindings version="2.1" xmlns:jxb="http://java.sun.com/xml/ns/jaxb" xmlns:xjc="http://java.sun.com/xml/ns/jaxb/xjc"
+
+              xmlns:xs="http://www.w3.org/2001/XMLSchema"
+              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+              xmlns:annox="http://annox.dev.java.net"
+              xsi:schemaLocation="http://java.sun.com/xml/ns/jaxb http://www.oracle.com/webfolder/technetwork/jsc/xml/ns/jaxb/bindingschema_2_0.xsd
+              http://java.sun.com/xml/ns/jaxb/xjc http://www.oracle.com/webfolder/technetwork/jsc/xml/ns/jaxb/bindingschema_2_0.xsd">
+
     <jxb:bindings schemaLocation="../../../../../src/main/resources/xsd/2_x_x/Main.xsd" node="/xs:schema">
-        <xjc:serializable uid="12343" />
+        <xjc:serializable uid="12343"/>
         <jxb:schemaBindings>
             <jxb:nameXmlTransform>
                 <jxb:typeName prefix="XML"/>
@@ -10,4 +16,13 @@
             </jxb:nameXmlTransform>
         </jxb:schemaBindings>
     </jxb:bindings>
+    <!--<jxb:bindings>
+        <jxb:bindings schemaLocation="../../../../../src/main/resources/xsd/2_x_x/Execution.xsd"
+                node="//xs:complexType[@name='Execution']//xs:complexContent//xs:extension//xs:sequence//xs:element[@name='parentExecution']">
+            <annox:annotate>
+                <annox:annotate annox:class="javax.xml.bind.annotation.XmlTransient"/>
+            </annox:annotate>
+        </jxb:bindings>
+    </jxb:bindings>-->
+
 </jxb:bindings>

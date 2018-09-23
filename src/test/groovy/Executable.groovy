@@ -10,8 +10,9 @@ class Executable implements Runnable{
     }
 
     @BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
-    void someMethod() {
+    void someMethod2() {
         System.out.println("zzzzzzzzzz")
+        BlackBoxEngine.getInstance().executionClose()
     }
 
 }

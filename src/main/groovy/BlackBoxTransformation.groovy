@@ -8,7 +8,6 @@ import org.codehaus.groovy.ast.MethodNode
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
-import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
@@ -30,7 +29,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
-            blackBoxEngine.logOpen(className, methodName)
             blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className":className, "methodName":methodName, "methodNode.getCode()": methodNode.getCode()])
             BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor()
             methodNode.getCode().visit(blackBoxVisitor)
@@ -42,13 +40,13 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.createLoggerDeclaration())
             decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.decorateMethod(methodNode, blackBoxLevel, annotationNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
-            blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getDeclaringClass())
+            blackBoxEngine.result("methodNode.getCode()", methodNode.getDeclaringClass())
         } catch (Throwable throwable) {
-            blackBoxEngine.methodException(throwable)
+            blackBoxEngine.exception(throwable)
             throw throwable
         } finally {
-            blackBoxEngine.methodExecutionClose()
-            blackBoxEngine.logClose()
+            blackBoxEngine.executionClose()
+            blackBoxEngine.executionClose()
         }
     }
 

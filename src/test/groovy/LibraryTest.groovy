@@ -22,7 +22,7 @@ class LibraryTest extends Specification {
 
     }
 
-    @BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+    //@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
     def test() {
         setup:
         log.fine("test")

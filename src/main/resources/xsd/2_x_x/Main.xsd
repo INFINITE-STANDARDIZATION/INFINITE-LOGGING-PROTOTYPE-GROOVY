@@ -12,13 +12,11 @@
     <xs:include schemaLocation="./manual/Info.xsd"/>
     <xs:include schemaLocation="ExecutionStatus.xsd"/>
     <xs:include schemaLocation="./manual/Traces.xsd"/>
-    <xs:include schemaLocation="./automatic/StatementException.xsd"/>
     <xs:include schemaLocation="./automatic/ExpressionEvaluation.xsd"/>
     <xs:include schemaLocation="./automatic/Exception.xsd"/>
     <xs:include schemaLocation="./Message.xsd"/>
     <xs:include schemaLocation="./manual/Warning.xsd"/>
     <xs:include schemaLocation="Execution.xsd"/>
-    <xs:include schemaLocation="./automatic/ExpressionException.xsd"/>
     <xs:include schemaLocation="./automatic/StatementExecution.xsd"/>
     <xs:include schemaLocation="./manual/Debug.xsd"/>
     <xs:include schemaLocation="./automatic/MethodException.xsd"/>
