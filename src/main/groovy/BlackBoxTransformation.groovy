@@ -40,12 +40,11 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.createLoggerDeclaration())
             decoratedMethodNodeBlockStatement.addStatement(blackBoxEngine.decorateMethod(methodNode, blackBoxLevel, annotationNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
-            blackBoxEngine.result("methodNode.getCode()", methodNode.getDeclaringClass())
+            blackBoxEngine.result("methodNode.getCode()", methodNode.getCode())
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
         } finally {
-            blackBoxEngine.executionClose()
             blackBoxEngine.executionClose()
         }
     }

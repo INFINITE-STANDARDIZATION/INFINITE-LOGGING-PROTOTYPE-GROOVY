@@ -1,23 +1,13 @@
 package groovy
 
-
 import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.codehaus.groovy.ast.ASTNode
-import org.codehaus.groovy.ast.AnnotationNode
-import org.codehaus.groovy.ast.ClassHelper
-import org.codehaus.groovy.ast.ClassNode
-import org.codehaus.groovy.ast.MethodNode
-import org.codehaus.groovy.ast.Parameter
+import org.codehaus.groovy.ast.*
 import org.codehaus.groovy.ast.builder.AstBuilder
 import org.codehaus.groovy.ast.expr.ArgumentListExpression
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression
-import org.codehaus.groovy.ast.stmt.BlockStatement
-import org.codehaus.groovy.ast.stmt.EmptyStatement
-import org.codehaus.groovy.ast.stmt.Statement
-import org.codehaus.groovy.ast.stmt.ThrowStatement
-import org.codehaus.groovy.ast.stmt.TryCatchStatement
+import org.codehaus.groovy.ast.stmt.*
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.control.CompilePhase
 
@@ -42,18 +32,36 @@ class BlackBoxEngine {
     final static String PCLASSSIMPLENAME = this.getClass().getSimpleName()
     final static String PPACKAGENAME = this.getClass().getPackage().getName()
 
+    BlackBoxEngine() {
+        PrintStream printStream = new PrintStream(System.out) {
+            @Override
+            void println(String string) {
+                getInstance().stdout(string)
+            }
+        }
+        System.setOut(printStream)
+        addShutdownHook {
+            synchronized (this) {
+                while (xmlExecution != null) {
+                    executionClose()
+                }
+            }
+        }
+        /*String blackBoxConfFileName = System.getProperty("blackBoxConfFileName")
+        if (blackBoxConfFileName == null) {
+            System.out.println("Prop missing")
+            blackBoxConfFileName = "resources/BlackBox.config"
+        }
+        blackBoxEngine.configObject = new ConfigSlurper().parse(new File(blackBoxConfFileName).toURI().toURL())*/
+    }
+
     static BlackBoxEngine getInstance() {
         BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class)
         if (blackBoxEngine == null) {
             XMLExecution.getMetaClass().parentExecution = null
             blackBoxEngine = new BlackBoxEngine()
-            String blackBoxConfFileName = System.getProperty("blackBoxConfFileName")
-            if (blackBoxConfFileName == null) {
-                System.out.println("Prop missing")
-                blackBoxConfFileName = "resources/BlackBox.config"
-            }
-            blackBoxEngine.configObject = new ConfigSlurper().parse(new File(blackBoxConfFileName).toURI().toURL())
             blackBoxEngineThreadLocal.set(blackBoxEngine)
+
         }
         return blackBoxEngine
     }
@@ -72,6 +80,22 @@ class BlackBoxEngine {
         }
     }
 
+    /*
+    static tagOpen(XMLExecution iXmlExecution) {
+        String iTagString = "<"
+        switch (iXmlExecution) {
+            case XMLLog: iTagString += """log xmlns="https://i-t.io/logging/groovy/2_x_x/Main" """; break
+            case XMLMethodExecution: iTagString += """event xsi:type="MethodExecution" """; break
+            case XMLStatementExecution: iTagString += """event xsi:type="StatementExecution" """; break
+            case XMLExpressionEvaluation: iTagString += """event xsi:type=ExpressionEvaluation" """; break
+        }
+        for (k in iXmlExecution.getProperties().keySet()) {
+            iTagString += """ $k="${XmlUtil.escapeXml(iXmlExecution.getProperties().get(k).toString())}" """
+        }
+        iTagString += ">"
+        log.debug(iTagString)
+    }*/
+
     static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         Statement methodCodeStatement = iMethodNode.getCode()
         Parameter[] methodParameters = iMethodNode.getParameters()
@@ -80,7 +104,11 @@ class BlackBoxEngine {
         tryBlock.addStatement(methodCodeStatement)
         Statement finallyBlock
         if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-            decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().methodExecutionOpen("${iMethodNode.getDeclaringClass().getNameWithoutPackage()}", "${iMethodNode.getDeclaringClass().getPackageName()}", "${iMethodNode.getName()}" %s)""", methodParameters))
+            decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().methodExecutionOpen("${
+                iMethodNode.getDeclaringClass().getNameWithoutPackage()
+            }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
+                iMethodNode.getName()
+            }" %s)""", methodParameters))
             finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
             decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else if (iBlackBoxLevel == BlackBoxLevel.ERROR) {
@@ -118,7 +146,7 @@ class BlackBoxEngine {
         try {
             String statementCode
             if (methodArgumentsPresent(iParameters)) {
-            ArrayList<String> serializedParameters = new ArrayList<String>()
+                ArrayList<String> serializedParameters = new ArrayList<String>()
                 for (parameter in iParameters) {
                     serializedParameters.add(""""${parameter.getName()}": ${parameter.getName()}""")
                 }
@@ -185,9 +213,8 @@ class BlackBoxEngine {
             marshaller.marshal(new ObjectFactory().createLog(xmlLog), stringWriter)
             String xmlString = stringWriter.toString()
             log.debug(xmlString)
-        } else {
-            xmlExecution = xmlExecution.parentExecution
         }
+        xmlExecution = xmlExecution.parentExecution
     }
 
     private void logOpen(String iClassSimpleName, String iPackageName, String iMethodName) {
@@ -215,4 +242,13 @@ class BlackBoxEngine {
         xmlMethodException.setMessage(ExceptionUtils.getMessage(throwable))
         xmlExecution.setException(xmlMethodException)
     }
+
+
+    void stdout(String iMessage) {
+        XMLStdout xmlStdout = new XMLStdout()
+        xmlStdout.setMessage(iMessage)
+        xmlStdout.setDateTime(getXMLGregorianCalendar())
+        xmlExecution.getEvent().add(xmlStdout)
+    }
+
 }

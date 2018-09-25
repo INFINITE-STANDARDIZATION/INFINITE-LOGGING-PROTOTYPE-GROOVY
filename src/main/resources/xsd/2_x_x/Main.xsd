@@ -9,6 +9,7 @@
     <xs:include schemaLocation="Trace.xsd"/>
     <xs:include schemaLocation="./automatic/MethodExecution.xsd"/>
     <xs:include schemaLocation="./manual/Error.xsd"/>
+    <xs:include schemaLocation="./manual/Stdout.xsd"/>
     <xs:include schemaLocation="./manual/Info.xsd"/>
     <xs:include schemaLocation="ExecutionStatus.xsd"/>
     <xs:include schemaLocation="./manual/Traces.xsd"/>
