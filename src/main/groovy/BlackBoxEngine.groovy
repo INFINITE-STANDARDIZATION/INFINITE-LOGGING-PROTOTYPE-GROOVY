@@ -1,5 +1,7 @@
 package groovy
 
+import groovy.inspect.swingui.AstNodeToScriptVisitor
+import groovy.json.StringEscapeUtils
 import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
@@ -10,6 +12,7 @@ import org.codehaus.groovy.ast.expr.ConstructorCallExpression
 import org.codehaus.groovy.ast.stmt.*
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.control.CompilePhase
+import org.codehaus.groovy.util.StringUtil
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
@@ -96,6 +99,28 @@ class BlackBoxEngine {
         log.debug(iTagString)
     }*/
 
+
+    static Statement decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
+        Statement statement = iStatement
+        BlockStatement decoratedBlockStatement = new BlockStatement()
+        BlockStatement tryBlock = new BlockStatement()
+        tryBlock.addStatement(statement)
+        Statement finallyBlock
+        if (iBlackBoxLevel.value() >= BlackBoxLevel.STATEMENT.value()) {
+            BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode)
+            iStatement.visit(blackBoxVisitor)
+            decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().statementExecutionOpen("${iStatement.getClass().getSimpleName()}", "${codeString(iStatement)}", ${iStatement.getColumnNumber()}, ${iStatement.getLastColumnNumber()}, ${iStatement.getLineNumber()}, ${iStatement.getLastLineNumber()})"""))
+            finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
+        } else if (iBlackBoxLevel == BlackBoxLevel.STATEMENT_ERROR) {
+            finallyBlock = new EmptyStatement()
+            decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
+        } else {
+            return statement
+        }
+        return decoratedBlockStatement
+    }
+
     static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         Statement methodCodeStatement = iMethodNode.getCode()
         Parameter[] methodParameters = iMethodNode.getParameters()
@@ -111,7 +136,11 @@ class BlackBoxEngine {
             }" %s)""", methodParameters))
             finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
             decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
-        } else if (iBlackBoxLevel == BlackBoxLevel.ERROR) {
+            if (iBlackBoxLevel.value() >= BlackBoxLevel.STATEMENT.value()) {
+                BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode)
+                methodCodeStatement.visit(blackBoxVisitor)
+            }
+        } else if (iBlackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
             finallyBlock = new EmptyStatement()
             decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
         } else {
@@ -119,7 +148,6 @@ class BlackBoxEngine {
         }
         return decoratedBlockStatement
     }
-
 
     static Statement createLoggerDeclaration() {
         //Workaround of: https://issues.apache.org/jira/browse/GROOVY-4927
@@ -142,7 +170,7 @@ class BlackBoxEngine {
     }
 
     static Statement text2statement(String iCodeText, Parameter[] iParameters) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iCodeText": iCodeText, "iParameters": iParameters])
+        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "text2statement", ["iCodeText": iCodeText, "iParameters": iParameters])
         try {
             String statementCode
             if (methodArgumentsPresent(iParameters)) {
@@ -172,9 +200,29 @@ class BlackBoxEngine {
         return lXMLGregorianCalendar
     }
 
+    static String codeString(ASTNode iAstNode) {
+        StringWriter stringWriter = new StringWriter()
+        iAstNode.visit(new AstNodeToScriptVisitor(stringWriter))
+        return StringEscapeUtils.escapeJavaScript(StringEscapeUtils.escapeJava(stringWriter.getBuffer().toString().replace("\$", "")))
+    }
+
+    void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
+        XMLStatementExecution newXmlStatementExecution = new XMLStatementExecution()
+        newXmlStatementExecution.parentExecution = xmlExecution
+        newXmlStatementExecution.setStartDateTime(getXMLGregorianCalendar())
+        newXmlStatementExecution.setStatementName(iStatementName)
+        newXmlStatementExecution.setRestoredScriptCode(iRestoredScriptCode)
+        newXmlStatementExecution.setColumnNumber(iColumnNumber as BigInteger)
+        newXmlStatementExecution.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        newXmlStatementExecution.setLineNumber(iLineNumber as BigInteger)
+        newXmlStatementExecution.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlExecution.getEvent().add(newXmlStatementExecution)
+        xmlExecution = newXmlStatementExecution
+    }
+
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap) {
         if (xmlExecution == null) {
-            logOpen(iClassSimpleName, iPackageName, iMethodName)
+            logOpen()
         }
         XMLMethodExecution newXmlExecution = new XMLMethodExecution()
         newXmlExecution.parentExecution = xmlExecution
@@ -217,10 +265,10 @@ class BlackBoxEngine {
         xmlExecution = xmlExecution.parentExecution
     }
 
-    private void logOpen(String iClassSimpleName, String iPackageName, String iMethodName) {
+    private void logOpen() {
         XMLLog xmlLog = new XMLLog()
         xmlExecution = xmlLog
-        xmlLog.setCurrentLogName(iPackageName + "." + iClassSimpleName + "-" + iMethodName + ".log")
+        xmlLog.setCurrentLogName(Thread.currentThread().getName())
         xmlLog.setPreviousLogName(xmlLog.getCurrentLogName())
         xmlLog.setProcessId(ManagementFactory.getRuntimeMXBean().getName())
         xmlLog.setProgramName("INFINITE-LOGGING-PROTOTYPE-GROOVY")
@@ -237,10 +285,11 @@ class BlackBoxEngine {
     }
 
     void exception(Throwable throwable) {
-        XMLMethodException xmlMethodException = new XMLMethodException()
-        xmlMethodException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
-        xmlMethodException.setMessage(ExceptionUtils.getMessage(throwable))
-        xmlExecution.setException(xmlMethodException)
+        XMLException xmlException = new XMLException()
+        xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
+        xmlException.setMessage(ExceptionUtils.getMessage(throwable))
+        xmlException.setExceptionClassName(throwable.getClass().getCanonicalName())
+        xmlExecution.setException(xmlException)
     }
 
 

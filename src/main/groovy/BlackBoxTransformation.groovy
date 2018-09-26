@@ -29,9 +29,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
+            Thread.currentThread().setName("Compilation_$className.$methodName")
             blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className":className, "methodName":methodName, "methodNode.getCode()": methodNode.getCode()])
-            BlackBoxVisitor blackBoxVisitor = new BlackBoxVisitor()
-            methodNode.getCode().visit(blackBoxVisitor)
             AnnotationNode annotationNode = iAstNodeArray[0] as AnnotationNode
             BlackBoxLevel blackBoxLevel = getBlackBoxLevel(annotationNode)
             BlockStatement decoratedMethodNodeBlockStatement = new BlockStatement()

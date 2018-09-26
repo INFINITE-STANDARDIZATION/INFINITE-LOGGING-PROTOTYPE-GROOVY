@@ -5,12 +5,13 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="../Message.xsd"/>
     <xs:include schemaLocation="../Trace.xsd"/>
-    <xs:complexType abstract="true" name="Exception">
+    <xs:complexType name="Exception">
         <xs:complexContent>
             <xs:extension base="Message">
                 <xs:sequence>
                     <xs:element name="exceptionStackTrace" type="xs:string"/>
                 </xs:sequence>
+                <xs:attribute name="exceptionClassName" type="xs:string"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

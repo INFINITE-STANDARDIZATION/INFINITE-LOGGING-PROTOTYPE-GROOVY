@@ -1,6 +1,7 @@
 package groovy
 
 import groovy.transform.ToString
+import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.CodeVisitorSupport
 import org.codehaus.groovy.ast.expr.ArgumentListExpression
 import org.codehaus.groovy.ast.expr.ArrayExpression
@@ -49,6 +50,7 @@ import org.codehaus.groovy.ast.stmt.ExpressionStatement
 import org.codehaus.groovy.ast.stmt.ForStatement
 import org.codehaus.groovy.ast.stmt.IfStatement
 import org.codehaus.groovy.ast.stmt.ReturnStatement
+import org.codehaus.groovy.ast.stmt.Statement
 import org.codehaus.groovy.ast.stmt.SwitchStatement
 import org.codehaus.groovy.ast.stmt.SynchronizedStatement
 import org.codehaus.groovy.ast.stmt.ThrowStatement
@@ -63,19 +65,27 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     final static String PCLASSSIMPLENAME= this.getClass().getSimpleName()
     final static String PPACKAGENAME= this.getClass().getPackage().getName()
     final BlackBoxEngine blackBoxEngine = BlackBoxEngine.getInstance()
+    BlackBoxLevel blackBoxLevel
+    AnnotationNode annotationNode
+
+    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
+        blackBoxLevel = iBlackBoxLevel
+        annotationNode = iAnnotationNode
+    }
+
+    private BlackBoxVisitor() {}
 
     @Override
     void visitBlockStatement(BlockStatement iBlockStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBlockStatement", ["block":iBlockStatement])
         try {
-            /*List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
+            List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
             for (Statement statement : iBlockStatement.getStatements()) {
-                statements.add(blackBoxEngine.decorateStatement(statement))
+                statements.add(blackBoxEngine.decorateStatement(statement, blackBoxLevel, annotationNode))
             }
             iBlockStatement.getStatements().clear()
-            iBlockStatement.getStatements().addAll(statements)*/
+            iBlockStatement.getStatements().addAll(statements)
             blackBoxEngine.result("iBlockStatement", iBlockStatement)
-            super.visitBlockStatement(iBlockStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
