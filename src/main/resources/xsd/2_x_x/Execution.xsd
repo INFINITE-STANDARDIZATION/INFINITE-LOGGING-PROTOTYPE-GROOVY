@@ -15,7 +15,6 @@
                     <xs:element type="ExecutionTrailer" name="executionTrailer" minOccurs="0"/>
                     <!--<xs:element type="Execution" name="parentExecution" minOccurs="0"/>-->
                     <xs:element type="Trace" name="result" minOccurs="0"/>
-                    <xs:element type="Exception" name="exception" minOccurs="0"/>
                 </xs:sequence>
                 <xs:attribute use="required" name="startDateTime" type="xs:dateTime"/>
                 <xs:attribute name="lineNumber" type="xs:integer"/>

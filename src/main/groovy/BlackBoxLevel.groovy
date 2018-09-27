@@ -2,7 +2,8 @@ package groovy
 
 enum BlackBoxLevel {
 
-    EXPRESSION(6),
+    EXPRESSION(7),
+    EXPRESSION_ERROR(6),
     STATEMENT(5),
     STATEMENT_ERROR(4),
     METHOD(3),

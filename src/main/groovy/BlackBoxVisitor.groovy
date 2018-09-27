@@ -79,7 +79,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBlockStatement(BlockStatement iBlockStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBlockStatement", ["block":iBlockStatement])
         try {
-            super.visitBlockStatement(iBlockStatement)
             List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
             for (Statement statement : iBlockStatement.getStatements()) {
                 statements.add(blackBoxEngine.decorateStatement(statement, blackBoxLevel, annotationNode))
@@ -99,7 +98,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitForLoop(ForStatement iForStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitForLoop", ["forLoop": iForStatement])
         try {
-            super.visitForLoop(iForStatement)
             iForStatement.setCollectionExpression(blackBoxEngine.decorateExpression(iForStatement.getCollectionExpression(), blackBoxLevel, annotationNode))
             iForStatement.setLoopBlock(blackBoxEngine.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel, annotationNode))
             blackBoxEngine.result("iForStatement", iForStatement)
