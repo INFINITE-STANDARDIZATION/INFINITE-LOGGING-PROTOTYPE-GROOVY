@@ -56,7 +56,9 @@ import org.codehaus.groovy.ast.stmt.SynchronizedStatement
 import org.codehaus.groovy.ast.stmt.ThrowStatement
 import org.codehaus.groovy.ast.stmt.TryCatchStatement
 import org.codehaus.groovy.ast.stmt.WhileStatement
+import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.BytecodeExpression
+import org.codehaus.groovy.syntax.Token
 
 @ToString(includeNames = true, includeFields = true)
 class BlackBoxVisitor extends CodeVisitorSupport {
@@ -77,7 +79,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
 
     @Override
     void visitBlockStatement(BlockStatement iBlockStatement) {
-        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBlockStatement", ["block":iBlockStatement])
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBlockStatement", ["iBlockStatement": iBlockStatement])
         try {
             List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
             for (Statement statement : iBlockStatement.getStatements()) {
@@ -96,7 +98,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
 
     @Override
     void visitForLoop(ForStatement iForStatement) {
-        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitForLoop", ["forLoop": iForStatement])
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitForLoop", ["iForStatement": iForStatement])
         try {
             iForStatement.setCollectionExpression(blackBoxEngine.decorateExpression(iForStatement.getCollectionExpression(), blackBoxLevel, annotationNode))
             iForStatement.setLoopBlock(blackBoxEngine.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel, annotationNode))
@@ -111,20 +113,19 @@ class BlackBoxVisitor extends CodeVisitorSupport {
 
     @Override
     void visitWhileLoop(WhileStatement iWhileStatement) {
-        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitWhileLoop", ["loop": iWhileStatement])
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitWhileLoop", ["iWhileStatement": iWhileStatement])
         try {
+            iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxEngine.decorateExpression(iWhileStatement.getBooleanExpression(), blackBoxLevel, annotationNode)))
+            iWhileStatement.setLoopBlock(blackBoxEngine.decorateStatement(iWhileStatement.getLoopBlock(), blackBoxLevel, annotationNode))
             blackBoxEngine.result("iWhileStatement", iWhileStatement)
-            super.visitWhileLoop(iWhileStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
         } finally {
             blackBoxEngine.executionClose()
         }
-        blackBoxEngine.result("iWhileStatement", iWhileStatement)
-        super.visitWhileLoop(iWhileStatement)
     }
-
+/*
     @Override
     void visitDoWhileLoop(DoWhileStatement iDoWhileStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitDoWhileLoop", ["loop": iDoWhileStatement])
@@ -824,4 +825,5 @@ class BlackBoxVisitor extends CodeVisitorSupport {
             blackBoxEngine.executionClose()
         }
     }
+    */
 }

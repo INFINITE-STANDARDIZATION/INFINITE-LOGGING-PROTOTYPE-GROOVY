@@ -29,8 +29,8 @@ class BlackBoxEngine {
     final static NOARGSMAP = new HashMap<String, Object>()
 
 
-    final static String PCLASSSIMPLENAME = this.getClass().getSimpleName()
-    final static String PPACKAGENAME = this.getClass().getPackage().getName()
+    final static String PCLASSSIMPLENAME = BlackBoxEngine.class.getSimpleName()
+    final static String PPACKAGENAME = BlackBoxEngine.class.getPackage().getName()
 
     BlackBoxEngine() {
         PrintStream printStream = new PrintStream(System.out) {
@@ -60,7 +60,6 @@ class BlackBoxEngine {
         if (blackBoxEngine == null) {
             XMLExecution.getMetaClass().parentExecution = null
             XMLExecution.getMetaClass().isFailed = null
-            ASTNode.getMetaClass().blackBoxVisited = false
             Throwable.getMetaClass().blackBoxLogged = false
             blackBoxEngine = new BlackBoxEngine()
             blackBoxEngineThreadLocal.set(blackBoxEngine)
@@ -101,9 +100,11 @@ class BlackBoxEngine {
 
     static Expression decorateExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
+        if (codeString(iExpression).contains("automatic")) {
+            throw new Exception("trapped!")
+        }
         try {
             String iOrigExpressionCode = codeString(iExpression)
-            iExpression.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
             if (iBlackBoxLevel.value() >= BlackBoxLevel.EXPRESSION.value()) {
                 ReturnStatement returnStatement = new ReturnStatement(iExpression)
                 returnStatement.setExpression(iExpression)
@@ -123,10 +124,10 @@ class BlackBoxEngine {
                                 GeneralUtils.constX(iBlackBoxLevel.value()),
                         )
                 )
-                methodCallExpression.blackBoxVisited = true
+                iExpression.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
                 return getInstance().result("methodCallExpression", methodCallExpression) as Expression
             } else {
-                iExpression.blackBoxVisited = true
+                iExpression.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
                 return getInstance().result("iExpression", iExpression) as Expression
             }
         } catch (Throwable throwable) {
@@ -139,31 +140,33 @@ class BlackBoxEngine {
 
     static Statement decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
+        if (codeString(iStatement).contains("automatic")) {
+            throw new Exception("trapped!")
+        }
         try {
             String iOrigStatementCode = codeString(iStatement)
-            iStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
             BlockStatement decoratedBlockStatement = new BlockStatement()
             BlockStatement tryBlock = new BlockStatement()
             tryBlock.addStatement(iStatement)
             Statement finallyBlock
             if (iBlackBoxLevel.value() >= BlackBoxLevel.STATEMENT.value()) {
-                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().statementExecutionOpen("${
+                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.statementExecutionOpen("${
                     iStatement.getClass().getSimpleName()
                 }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
                     iStatement.getLastColumnNumber()
                 }, ${
                     iStatement.getLineNumber()
                 }, ${iStatement.getLastLineNumber()})"""))
-                finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
+                finallyBlock = text2statement("automaticBlackBox.executionClose()")
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
             } else if (iBlackBoxLevel == BlackBoxLevel.STATEMENT_ERROR) {
                 finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
             } else {
-                iStatement.blackBoxVisited = true
+                iStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
                 return getInstance().result("iStatement", iStatement) as Statement
             }
-            decoratedBlockStatement.blackBoxVisited = true
+            iStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
             return getInstance().result("decoratedBlockStatement", decoratedBlockStatement) as Statement
         } catch (Throwable throwable) {
             getInstance().exception(throwable)
@@ -176,15 +179,13 @@ class BlackBoxEngine {
     static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
         getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateMethod", ["iMethodNode.getCode()": iMethodNode.getCode(), "iBlackBoxLevel": iBlackBoxLevel])
         try {
-            Statement methodCodeStatement = iMethodNode.getCode()
             Parameter[] methodParameters = iMethodNode.getParameters()
             BlockStatement decoratedBlockStatement = new BlockStatement()
             BlockStatement tryBlock = new BlockStatement()
-            tryBlock.addStatement(methodCodeStatement)
+            tryBlock.addStatement(iMethodNode.getCode())
             Statement finallyBlock
-            methodCodeStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<<<<<<
             if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.getInstance().methodExecutionOpen("${
+                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
                     iMethodNode.getDeclaringClass().getNameWithoutPackage()
                 }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
                     iMethodNode.getName()
@@ -197,16 +198,16 @@ class BlackBoxEngine {
                 }, ${
                     iMethodNode.getLastLineNumber()
                 })""", methodParameters))
-                finallyBlock = text2statement("automaticBlackBox.getInstance().executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+                finallyBlock = text2statement("automaticBlackBox.executionClose()")
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
             } else if (iBlackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
                 finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.getInstance().exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
             } else {
-                methodCodeStatement.blackBoxVisited = true
-                return getInstance().result("methodCodeStatement", methodCodeStatement) as Statement
+                iMethodNode.getCode().visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<<<<<<
+                return getInstance().result("iMethodNode.getCode()", iMethodNode.getCode()) as Statement
             }
-            decoratedBlockStatement.blackBoxVisited = true
+            iMethodNode.getCode().visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<<<<<<
             return getInstance().result("decoratedBlockStatement", decoratedBlockStatement) as Statement
         } catch (Throwable throwable) {
             getInstance().exception(throwable)
@@ -217,8 +218,8 @@ class BlackBoxEngine {
     }
 
     static Statement createLoggerDeclaration() {
-        //Workaround of: https://issues.apache.org/jira/browse/GROOVY-4927
-        return GeneralUtils.declS(GeneralUtils.varX("automaticBlackBox"), new ConstructorCallExpression(new ClassNode(BlackBoxEngine), new ArgumentListExpression()))
+        //see also: https://issues.apache.org/jira/browse/GROOVY-4927
+        return GeneralUtils.declS(GeneralUtils.varX("automaticBlackBox", ClassHelper.make(BlackBoxEngine.class)), GeneralUtils.callX(new ConstructorCallExpression(new ClassNode(BlackBoxEngine), new ArgumentListExpression()), "getInstance"))
     }
 
     static TryCatchStatement createTryCatch(String iLogErrorCodeLine, BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters, AnnotationNode iAnnotationNode) {
