@@ -58,6 +58,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             decoratedMethodNodeBlockStatement.addStatement(createLoggerDeclaration())
             decoratedMethodNodeBlockStatement.addStatement(decorateMethod(methodNode, blackBoxLevel, annotationNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
+            methodNode.setCode(text2statement(codeString(methodNode.getCode())))
             blackBoxEngine.result("methodNode.getCode()", methodNode.getCode())
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -82,7 +83,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 return blackBoxEngine.result("iExpression", iExpression) as Expression
             }
             String iOrigExpressionCode = codeString(iExpression)
-            ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.block(GeneralUtils.returnS(iExpression)))
+            ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
             closureExpression.setVariableScope(new VariableScope())
             MethodCallExpression methodCallExpression = GeneralUtils.callX(
                     GeneralUtils.varX("automaticBlackBox"),
@@ -109,30 +110,28 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
     
-    Statement decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel) {
+    List<Statement> decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
         try {
             if (iBlackBoxLevel.value() < BlackBoxLevel.STATEMENT.value()) {
                 iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
-                return blackBoxEngine.result("iStatement", iStatement) as Statement
+                return blackBoxEngine.result("[iStatement]", [iStatement]) as List<Statement>
             }
             String iOrigStatementCode = codeString(iStatement)
-            BlockStatement decoratedBlockStatement = new BlockStatement()
+            List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
             Statement finallyBlock
-            decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.statementExecutionOpen("${
+            decoratedStatements.add(text2statement("""automaticBlackBox.statementExecutionOpen("${
                 iStatement.getClass().getSimpleName()
             }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
                 iStatement.getLastColumnNumber()
             }, ${
                 iStatement.getLineNumber()
             }, ${iStatement.getLastLineNumber()})"""))
-            decoratedBlockStatement.addStatement(iStatement)
+            decoratedStatements.add(iStatement)
             finallyBlock = text2statement("automaticBlackBox.executionClose()")
-            decoratedBlockStatement.addStatement(finallyBlock)
-            decoratedBlockStatement.copyNodeMetaData(iStatement)
-            decoratedBlockStatement.setSourcePosition(iStatement)
+            decoratedStatements.add(finallyBlock)
             iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
-            return blackBoxEngine.result("decoratedBlockStatement", decoratedBlockStatement) as Statement
+            return blackBoxEngine.result("decoratedStatements", decoratedStatements) as List<Statement>
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -229,7 +228,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             } else {
                 statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
             }
-            List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, statementCode)
+            List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, statementCode)
             return blackBoxEngine.result("resultingStatements.first()", resultingStatements.first()) as Statement
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

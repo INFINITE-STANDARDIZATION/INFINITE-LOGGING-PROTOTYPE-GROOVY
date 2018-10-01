@@ -87,7 +87,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         try {
             List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
             for (Statement statement : iBlockStatement.getStatements()) {
-                statements.add(blackBoxTransformation.decorateStatement(statement, blackBoxLevel))
+                statements.addAll(blackBoxTransformation.decorateStatement(statement, blackBoxLevel))
             }
             iBlockStatement.getStatements().clear()
             iBlockStatement.getStatements().addAll(statements)
@@ -120,7 +120,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitWhileLoop", ["iWhileStatement": iWhileStatement])
         try {
             iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.decorateExpression(iWhileStatement.getBooleanExpression(), blackBoxLevel)))
-            iWhileStatement.setLoopBlock(blackBoxTransformation.decorateStatement(iWhileStatement.getLoopBlock(), blackBoxLevel))
+            iWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iWhileStatement.getLoopBlock(), blackBoxLevel)))
             blackBoxEngine.result("iWhileStatement", iWhileStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

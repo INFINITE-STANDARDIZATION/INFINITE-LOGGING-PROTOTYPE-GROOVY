@@ -16,9 +16,10 @@ class Executable implements Runnable {
             System.out.println("iiiiiiiiii " + i)
         }*/
         int wwww = 0
-        //while (wwww < 2) {
+        while (wwww < 2) {
             System.out.println("zzzzzzzzzz " + wwww)
-        //}
+            wwww++
+        }
         //1/0
         //BlackBoxEngine.getInstance().executionClose()
     }
