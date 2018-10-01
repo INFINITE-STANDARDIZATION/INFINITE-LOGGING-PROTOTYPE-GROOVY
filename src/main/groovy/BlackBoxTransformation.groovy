@@ -23,6 +23,7 @@ import org.codehaus.groovy.ast.stmt.Statement
 import org.codehaus.groovy.ast.stmt.ThrowStatement
 import org.codehaus.groovy.ast.stmt.TryCatchStatement
 import org.codehaus.groovy.ast.tools.GeneralUtils
+import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.transform.AbstractASTTransformation
@@ -243,7 +244,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         iAstNode.visit(new AstNodeToScriptVisitor(stringWriter))
         return stringWriter.getBuffer().toString().replace("\$", "")
     }
-
 
     static final Boolean methodArgumentsPresent(Object iArgs) {
         if (iArgs != null) {

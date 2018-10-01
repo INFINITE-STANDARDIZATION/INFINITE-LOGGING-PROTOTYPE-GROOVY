@@ -60,6 +60,7 @@ import org.codehaus.groovy.ast.stmt.TryCatchStatement
 import org.codehaus.groovy.ast.stmt.WhileStatement
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.BytecodeExpression
+import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.syntax.Token
 
@@ -74,26 +75,11 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     AnnotationNode annotationNode
     BlackBoxTransformation blackBoxTransformation
     
-    ///////
-    private VariableScope currentScope = null
-    private final VariableScope headScope = new VariableScope()
-    private ClassNode currentClass = null
-    private final SourceUnit source
-    private boolean isSpecialConstructorCall = false
-    private boolean inConstructor = false
-    private final boolean recurseInnerClasses
-    ///////
-
     BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode, SourceUnit iSource, BlackBoxTransformation iBlackBoxTransformation) {
         blackBoxLevel = iBlackBoxLevel
         annotationNode = iAnnotationNode
-        source = iSource
-        currentScope = headScope
-        recurseInnerClasses = true
         blackBoxTransformation = iBlackBoxTransformation
     }
-
-    private BlackBoxVisitor() {}
 
     @Override
     void visitBlockStatement(BlockStatement iBlockStatement) {
