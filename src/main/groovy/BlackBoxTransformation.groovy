@@ -43,6 +43,11 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     void visit(ASTNode[] iAstNodeArray, SourceUnit iSourceUnit) {
         final String LMETHODNAME = "visit"
         try {
+            ////////////////
+            //IMPORTANT: AT NO POINT OF TIME NEW BLOCK STATEMENTS SHOULD BE CREATED AS IT AFFECTS VARIABLE SCOPE
+            //IN GROOVY BLOCK STATEMENT SHOULD BE DONE ABSTRACT WITH CONCRETE IMPLEMENTATIONS FOR CLASSES LIKE LOOP BLOCK ETC
+            //VARIABLE SCOPE OF DECLARATIONS WITHIN BLOCK STATEMENT IS LOCAL AND CAN NOT BE CHANGED!
+            ////////////////
             init(iAstNodeArray, iSourceUnit)
             MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
