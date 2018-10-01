@@ -20,17 +20,19 @@ import java.lang.management.ManagementFactory
 @Slf4j
 class BlackBoxEngine {
 
-    public static ThreadLocal<BlackBoxEngine> blackBoxEngineThreadLocal = new ThreadLocal<BlackBoxEngine>()
+    public static ThreadLocal blackBoxEngineThreadLocal = new ThreadLocal()
 
     XMLExecution xmlExecution
 
     ConfigObject configObject
 
+    BlackBoxVisitor blackBoxVisitor
+
     final static NOARGSMAP = new HashMap<String, Object>()
 
 
-    final static String PCLASSSIMPLENAME = BlackBoxEngine.class.getSimpleName()
-    final static String PPACKAGENAME = BlackBoxEngine.class.getPackage().getName()
+    final String PCLASSSIMPLENAME = this.getClass().getSimpleName()
+    final String PPACKAGENAME = this.getClass().getPackage().getName()
 
     BlackBoxEngine() {
         PrintStream printStream = new PrintStream(System.out) {
@@ -56,31 +58,16 @@ class BlackBoxEngine {
     }
 
     static BlackBoxEngine getInstance() {
-        BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class)
+        BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class) as BlackBoxEngine
         if (blackBoxEngine == null) {
             XMLExecution.getMetaClass().parentExecution = null
             XMLExecution.getMetaClass().isFailed = null
-            Throwable.getMetaClass().blackBoxLogged = false
             blackBoxEngine = new BlackBoxEngine()
             blackBoxEngineThreadLocal.set(blackBoxEngine)
-
         }
         return blackBoxEngine
     }
 
-    static final Boolean methodArgumentsPresent(Object iArgs) {
-        if (iArgs != null) {
-            if (iArgs instanceof Collection) {
-                return iArgs.size() > 0
-            } else if (iArgs instanceof Object[]) {
-                return iArgs.length > 0
-            } else {
-                return false
-            }
-        } else {
-            return false
-        }
-    }
 
     /*
     static tagOpen(XMLExecution iXmlExecution) {
@@ -98,169 +85,6 @@ class BlackBoxEngine {
         log.debug(iTagString)
     }*/
 
-    static Expression decorateExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
-        if (codeString(iExpression).contains("automatic")) {
-            throw new Exception("trapped!")
-        }
-        try {
-            String iOrigExpressionCode = codeString(iExpression)
-            if (iBlackBoxLevel.value() >= BlackBoxLevel.EXPRESSION.value()) {
-                ReturnStatement returnStatement = new ReturnStatement(iExpression)
-                returnStatement.setExpression(iExpression)
-                ClosureExpression closureExpression = GeneralUtils.closureX(null as Parameter[], returnStatement)
-                closureExpression.setVariableScope(new VariableScope())
-                MethodCallExpression methodCallExpression = GeneralUtils.callX(
-                        GeneralUtils.varX("automaticBlackBox"),
-                        "expressionEvaluation",
-                        new ArgumentListExpression(
-                                GeneralUtils.constX(iExpression.getClass().getSimpleName()),
-                                GeneralUtils.constX(iOrigExpressionCode),
-                                GeneralUtils.constX(iExpression.getColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLastColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLineNumber()),
-                                GeneralUtils.constX(iExpression.getLastLineNumber()),
-                                closureExpression,
-                                GeneralUtils.constX(iBlackBoxLevel.value()),
-                        )
-                )
-                iExpression.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
-                return getInstance().result("methodCallExpression", methodCallExpression) as Expression
-            } else {
-                iExpression.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
-                return getInstance().result("iExpression", iExpression) as Expression
-            }
-        } catch (Throwable throwable) {
-            getInstance().exception(throwable)
-            throw throwable
-        } finally {
-            getInstance().executionClose()
-        }
-    }
-
-    static Statement decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
-        if (codeString(iStatement).contains("automatic")) {
-            throw new Exception("trapped!")
-        }
-        try {
-            String iOrigStatementCode = codeString(iStatement)
-            BlockStatement decoratedBlockStatement = new BlockStatement()
-            BlockStatement tryBlock = new BlockStatement()
-            tryBlock.addStatement(iStatement)
-            Statement finallyBlock
-            if (iBlackBoxLevel.value() >= BlackBoxLevel.STATEMENT.value()) {
-                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.statementExecutionOpen("${
-                    iStatement.getClass().getSimpleName()
-                }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
-                    iStatement.getLastColumnNumber()
-                }, ${
-                    iStatement.getLineNumber()
-                }, ${iStatement.getLastLineNumber()})"""))
-                finallyBlock = text2statement("automaticBlackBox.executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
-            } else if (iBlackBoxLevel == BlackBoxLevel.STATEMENT_ERROR) {
-                finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, null, iAnnotationNode))
-            } else {
-                iStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
-                return getInstance().result("iStatement", iStatement) as Statement
-            }
-            iStatement.visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<
-            return getInstance().result("decoratedBlockStatement", decoratedBlockStatement) as Statement
-        } catch (Throwable throwable) {
-            getInstance().exception(throwable)
-            throw throwable
-        } finally {
-            getInstance().executionClose()
-        }
-    }
-
-    static Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateMethod", ["iMethodNode.getCode()": iMethodNode.getCode(), "iBlackBoxLevel": iBlackBoxLevel])
-        try {
-            Parameter[] methodParameters = iMethodNode.getParameters()
-            BlockStatement decoratedBlockStatement = new BlockStatement()
-            BlockStatement tryBlock = new BlockStatement()
-            tryBlock.addStatement(iMethodNode.getCode())
-            Statement finallyBlock
-            if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
-                    iMethodNode.getDeclaringClass().getNameWithoutPackage()
-                }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
-                    iMethodNode.getName()
-                }" %s , ${
-                    iMethodNode.getColumnNumber()
-                }, ${
-                    iMethodNode.getLastColumnNumber()
-                }, ${
-                    iMethodNode.getLineNumber()
-                }, ${
-                    iMethodNode.getLastLineNumber()
-                })""", methodParameters))
-                finallyBlock = text2statement("automaticBlackBox.executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
-            } else if (iBlackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
-                finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
-            } else {
-                iMethodNode.getCode().visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<<<<<<
-                return getInstance().result("iMethodNode.getCode()", iMethodNode.getCode()) as Statement
-            }
-            iMethodNode.getCode().visit(new BlackBoxVisitor(iBlackBoxLevel, iAnnotationNode))//<<<<<<<<<<<<<<<<<<<
-            return getInstance().result("decoratedBlockStatement", decoratedBlockStatement) as Statement
-        } catch (Throwable throwable) {
-            getInstance().exception(throwable)
-            throw throwable
-        } finally {
-            getInstance().executionClose()
-        }
-    }
-
-    static Statement createLoggerDeclaration() {
-        //see also: https://issues.apache.org/jira/browse/GROOVY-4927
-        return GeneralUtils.declS(GeneralUtils.varX("automaticBlackBox", ClassHelper.make(BlackBoxEngine.class)), GeneralUtils.callX(new ConstructorCallExpression(new ClassNode(BlackBoxEngine), new ArgumentListExpression()), "getInstance"))
-    }
-
-    static TryCatchStatement createTryCatch(String iLogErrorCodeLine, BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters, AnnotationNode iAnnotationNode) {
-        TryCatchStatement tryCatchStatement = new TryCatchStatement(iMainBlock, iFinallyBlock)
-        BlockStatement throwBlock = new BlockStatement()
-        throwBlock.addStatement(text2statement(iLogErrorCodeLine, iParameters))
-        throwBlock.addStatement(createThrowStatement(iAnnotationNode))
-        tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "throwable"), throwBlock))
-        return tryCatchStatement
-    }
-
-    static Statement createThrowStatement(AnnotationNode iAnnotationNode) {
-        ThrowStatement throwStatement = GeneralUtils.throwS(GeneralUtils.varX("throwable"))
-        iAnnotationNode.setSourcePosition(iAnnotationNode)
-        return throwStatement
-    }
-
-    static Statement text2statement(String iCodeText, Parameter[] iParameters) {
-        getInstance().methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "text2statement", ["iCodeText": iCodeText, "iParameters": iParameters])
-        try {
-            String statementCode
-            if (methodArgumentsPresent(iParameters)) {
-                ArrayList<String> serializedParameters = new ArrayList<String>()
-                for (parameter in iParameters) {
-                    serializedParameters.add(""""${parameter.getName()}": ${parameter.getName()}""")
-                }
-                statementCode = String.format(iCodeText, """, [${serializedParameters.join(",")}]""")
-            } else {
-                statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
-            }
-            List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, statementCode)
-            return getInstance().result("resultingStatements.first()", resultingStatements.first()) as Statement
-        } catch (Throwable throwable) {
-            getInstance().exception(throwable)
-            throw throwable
-        } finally {
-            getInstance().executionClose()
-        }
-
-    }
-
     static XMLGregorianCalendar getXMLGregorianCalendar(Date date = new Date()) {
         GregorianCalendar lGregorianCalendar = new GregorianCalendar()
         lGregorianCalendar.setTime(date)
@@ -268,50 +92,28 @@ class BlackBoxEngine {
         return lXMLGregorianCalendar
     }
 
-    static String codeString(ASTNode iAstNode) {
-        StringWriter stringWriter = new StringWriter()
-        iAstNode.visit(new AstNodeToScriptVisitor(stringWriter))
-        return stringWriter.getBuffer().toString().replace("\$", "")
-    }
-
-    Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, Integer iBlackBoxLevelValue) {
-        if (iBlackBoxLevelValue >= BlackBoxLevel.EXPRESSION.value()) {
-            XMLExpressionEvaluation xmlExpressionEvaluation = new XMLExpressionEvaluation()
-            xmlExpressionEvaluation.parentExecution = xmlExecution
-            xmlExpressionEvaluation.setStartDateTime(getXMLGregorianCalendar())
-            xmlExpressionEvaluation.setExpressionName(iExpressionName)
-            xmlExpressionEvaluation.setRestoredScriptCode(iRestoredScriptCode)
-            xmlExpressionEvaluation.setColumnNumber(iColumnNumber as BigInteger)
-            xmlExpressionEvaluation.setLastColumnNumber(iLastColumnNumber as BigInteger)
-            xmlExpressionEvaluation.setLineNumber(iLineNumber as BigInteger)
-            xmlExpressionEvaluation.setLastLineNumber(iLastLineNumber as BigInteger)
-            xmlExecution.getEvent().add(xmlExpressionEvaluation)
-            xmlExecution = xmlExpressionEvaluation
-            try {
-                Object evaluationResult = iClosure.call()
-                xmlExpressionEvaluation.setResult(TraceSerializer.createXMLTraceTrace("evaluationResult", evaluationResult))
-                return evaluationResult
-            } catch (Throwable throwable) {
-                exception(throwable)
-                throw throwable
-            } finally {
-                executionClose()
-            }
-        } else if (iBlackBoxLevelValue >= BlackBoxLevel.EXPRESSION_ERROR.value()) {
-            try {
-                return iClosure.call()
-            } catch (Throwable throwable) {
-                exception(throwable)
-                throw throwable
-            }
-        } else {
-            return iClosure.call()
+    Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure) {
+        XMLExpressionEvaluation xmlExpressionEvaluation = new XMLExpressionEvaluation()
+        xmlExpressionEvaluation.parentExecution = xmlExecution
+        xmlExpressionEvaluation.setStartDateTime(getXMLGregorianCalendar())
+        xmlExpressionEvaluation.setExpressionName(iExpressionName)
+        xmlExpressionEvaluation.setRestoredScriptCode(iRestoredScriptCode)
+        xmlExpressionEvaluation.setColumnNumber(iColumnNumber as BigInteger)
+        xmlExpressionEvaluation.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        xmlExpressionEvaluation.setLineNumber(iLineNumber as BigInteger)
+        xmlExpressionEvaluation.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlExecution.getEvent().add(xmlExpressionEvaluation)
+        xmlExecution = xmlExpressionEvaluation
+        try {
+            Object evaluationResult = iClosure.call()
+            xmlExpressionEvaluation.setResult(TraceSerializer.createXMLTraceTrace("evaluationResult", evaluationResult))
+            return evaluationResult
+        } catch (Throwable throwable) {
+            exception(throwable)
+            throw throwable
+        } finally {
+            executionClose()
         }
-/*        XMLExecutionTrailer xmlExecutionTrailer = new XMLExecutionTrailer()
-        xmlExecutionTrailer.setEndDateTime(getXMLGregorianCalendar())
-        xmlExecutionTrailer.setElapsedTime(xmlExecutionTrailer.getEndDateTime().toGregorianCalendar().getTimeInMillis() - xmlExecution.getStartDateTime().toGregorianCalendar().getTimeInMillis() as BigInteger)
-        xmlExecution.setExecutionTrailer(xmlExecutionTrailer)
-        xmlExecution = xmlExecution.parentExecution*/
     }
 
     void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
@@ -329,6 +131,7 @@ class BlackBoxEngine {
     }
 
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap, Integer iColumnNumber = null, Integer iLastColumnNumber = null, Integer iLineNumber = null, Integer iLastLineNumber = null) {
+        //todo: "implicit" error logging - print log only when method has status failed, and save arguments
         if (xmlExecution == null) {
             logOpen()
         }
@@ -398,15 +201,15 @@ class BlackBoxEngine {
 
     void exception(Throwable throwable) {
         XMLException xmlException = new XMLException()
-        if (throwable.blackBoxLogged == false) {
-            xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
-            throwable.blackBoxLogged = true
-        } else {
-            xmlException.setExceptionStackTrace("Exception rethrown and stacktrace logged previously")
-        }
+        xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
         xmlException.setMessage(ExceptionUtils.getMessage(throwable))
         xmlException.setExceptionClassName(throwable.getClass().getCanonicalName())
         xmlException.setDateTime(getXMLGregorianCalendar())
+        while (!(xmlExecution instanceof XMLMethodExecution)) {
+            xmlExecution.getEvent().add(xmlException)
+            xmlExecution.isFailed = true
+            executionClose()
+        }
         xmlExecution.getEvent().add(xmlException)
         xmlExecution.isFailed = true
     }

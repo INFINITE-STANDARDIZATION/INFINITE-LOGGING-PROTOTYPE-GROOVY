@@ -2,7 +2,9 @@ package groovy
 
 import groovy.transform.ToString
 import org.codehaus.groovy.ast.AnnotationNode
+import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.ast.CodeVisitorSupport
+import org.codehaus.groovy.ast.VariableScope
 import org.codehaus.groovy.ast.expr.ArgumentListExpression
 import org.codehaus.groovy.ast.expr.ArrayExpression
 import org.codehaus.groovy.ast.expr.AttributeExpression
@@ -58,21 +60,37 @@ import org.codehaus.groovy.ast.stmt.TryCatchStatement
 import org.codehaus.groovy.ast.stmt.WhileStatement
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.BytecodeExpression
+import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.syntax.Token
 
 @ToString(includeNames = true, includeFields = true)
 class BlackBoxVisitor extends CodeVisitorSupport {
 
 
-    final static String PCLASSSIMPLENAME= this.getClass().getSimpleName()
-    final static String PPACKAGENAME= this.getClass().getPackage().getName()
+    final String PCLASSSIMPLENAME= this.getClass().getSimpleName()
+    final String PPACKAGENAME= this.getClass().getPackage().getName()
     final BlackBoxEngine blackBoxEngine = BlackBoxEngine.getInstance()
     BlackBoxLevel blackBoxLevel
     AnnotationNode annotationNode
+    BlackBoxTransformation blackBoxTransformation
+    
+    ///////
+    private VariableScope currentScope = null
+    private final VariableScope headScope = new VariableScope()
+    private ClassNode currentClass = null
+    private final SourceUnit source
+    private boolean isSpecialConstructorCall = false
+    private boolean inConstructor = false
+    private final boolean recurseInnerClasses
+    ///////
 
-    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
+    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode, SourceUnit iSource, BlackBoxTransformation iBlackBoxTransformation) {
         blackBoxLevel = iBlackBoxLevel
         annotationNode = iAnnotationNode
+        source = iSource
+        currentScope = headScope
+        recurseInnerClasses = true
+        blackBoxTransformation = iBlackBoxTransformation
     }
 
     private BlackBoxVisitor() {}
@@ -83,7 +101,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         try {
             List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
             for (Statement statement : iBlockStatement.getStatements()) {
-                statements.add(blackBoxEngine.decorateStatement(statement, blackBoxLevel, annotationNode))
+                statements.add(blackBoxTransformation.decorateStatement(statement, blackBoxLevel))
             }
             iBlockStatement.getStatements().clear()
             iBlockStatement.getStatements().addAll(statements)
@@ -100,8 +118,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitForLoop(ForStatement iForStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitForLoop", ["iForStatement": iForStatement])
         try {
-            iForStatement.setCollectionExpression(blackBoxEngine.decorateExpression(iForStatement.getCollectionExpression(), blackBoxLevel, annotationNode))
-            iForStatement.setLoopBlock(blackBoxEngine.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel, annotationNode))
+            iForStatement.setCollectionExpression(blackBoxTransformation.decorateExpression(iForStatement.getCollectionExpression(), blackBoxLevel))
+            iForStatement.setLoopBlock(blackBoxTransformation.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel))
             blackBoxEngine.result("iForStatement", iForStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -115,8 +133,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitWhileLoop(WhileStatement iWhileStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitWhileLoop", ["iWhileStatement": iWhileStatement])
         try {
-            iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxEngine.decorateExpression(iWhileStatement.getBooleanExpression(), blackBoxLevel, annotationNode)))
-            iWhileStatement.setLoopBlock(blackBoxEngine.decorateStatement(iWhileStatement.getLoopBlock(), blackBoxLevel, annotationNode))
+            iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.decorateExpression(iWhileStatement.getBooleanExpression(), blackBoxLevel)))
+            iWhileStatement.setLoopBlock(blackBoxTransformation.decorateStatement(iWhileStatement.getLoopBlock(), blackBoxLevel))
             blackBoxEngine.result("iWhileStatement", iWhileStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

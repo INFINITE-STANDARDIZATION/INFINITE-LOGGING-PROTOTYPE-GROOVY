@@ -4,9 +4,9 @@ import java.util.concurrent.ConcurrentHashMap
 
 /*Apache tomcat interferes with normal Thread locals.*/
 
-class ThreadLocal<Type> {
+class ThreadLocal {
 
-    public static ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Type>> objectsByThreadByClass = new ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Type>>()
+    public static ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Object>> objectsByThreadByClass = new ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Object>>()
 
     static void remove(Class iClass){
         if (objectsByThreadByClass.get(Thread.currentThread()) != null) {
@@ -17,16 +17,16 @@ class ThreadLocal<Type> {
         }
     }
 
-    static void set(Type iObject){
+    static void set(Object iObject){
         if (objectsByThreadByClass.get(Thread.currentThread()) != null) {
             objectsByThreadByClass.get(Thread.currentThread()).put(iObject.getClass(), iObject)
         } else {
-            objectsByThreadByClass.put(Thread.currentThread(), new ConcurrentHashMap<Class, Type>())
+            objectsByThreadByClass.put(Thread.currentThread(), new ConcurrentHashMap<Class, Object>())
             objectsByThreadByClass.get(Thread.currentThread()).put(iObject.getClass(), iObject)
         }
     }
 
-    static Type get(Class iClass){
+    static Object get(Class iClass){
         objectsByThreadByClass.get(Thread.currentThread())?.get(iClass)
     }
 
