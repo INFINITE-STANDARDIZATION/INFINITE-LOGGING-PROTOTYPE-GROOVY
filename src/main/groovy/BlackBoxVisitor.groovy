@@ -2,80 +2,25 @@ package groovy
 
 import groovy.transform.ToString
 import org.codehaus.groovy.ast.AnnotationNode
-import org.codehaus.groovy.ast.ClassNode
 import org.codehaus.groovy.ast.CodeVisitorSupport
 import org.codehaus.groovy.ast.VariableScope
-import org.codehaus.groovy.ast.expr.ArgumentListExpression
-import org.codehaus.groovy.ast.expr.ArrayExpression
-import org.codehaus.groovy.ast.expr.AttributeExpression
-import org.codehaus.groovy.ast.expr.BinaryExpression
-import org.codehaus.groovy.ast.expr.BitwiseNegationExpression
-import org.codehaus.groovy.ast.expr.BooleanExpression
-import org.codehaus.groovy.ast.expr.CastExpression
-import org.codehaus.groovy.ast.expr.ClassExpression
-import org.codehaus.groovy.ast.expr.ClosureExpression
-import org.codehaus.groovy.ast.expr.ClosureListExpression
-import org.codehaus.groovy.ast.expr.ConstantExpression
-import org.codehaus.groovy.ast.expr.ConstructorCallExpression
-import org.codehaus.groovy.ast.expr.DeclarationExpression
-import org.codehaus.groovy.ast.expr.ElvisOperatorExpression
-import org.codehaus.groovy.ast.expr.Expression
-import org.codehaus.groovy.ast.expr.FieldExpression
-import org.codehaus.groovy.ast.expr.GStringExpression
-import org.codehaus.groovy.ast.expr.ListExpression
-import org.codehaus.groovy.ast.expr.MapEntryExpression
-import org.codehaus.groovy.ast.expr.MapExpression
-import org.codehaus.groovy.ast.expr.MethodCallExpression
-import org.codehaus.groovy.ast.expr.MethodPointerExpression
-import org.codehaus.groovy.ast.expr.NotExpression
-import org.codehaus.groovy.ast.expr.PostfixExpression
-import org.codehaus.groovy.ast.expr.PrefixExpression
-import org.codehaus.groovy.ast.expr.PropertyExpression
-import org.codehaus.groovy.ast.expr.RangeExpression
-import org.codehaus.groovy.ast.expr.SpreadExpression
-import org.codehaus.groovy.ast.expr.SpreadMapExpression
-import org.codehaus.groovy.ast.expr.StaticMethodCallExpression
-import org.codehaus.groovy.ast.expr.TernaryExpression
-import org.codehaus.groovy.ast.expr.TupleExpression
-import org.codehaus.groovy.ast.expr.UnaryMinusExpression
-import org.codehaus.groovy.ast.expr.UnaryPlusExpression
-import org.codehaus.groovy.ast.expr.VariableExpression
-import org.codehaus.groovy.ast.stmt.AssertStatement
-import org.codehaus.groovy.ast.stmt.BlockStatement
-import org.codehaus.groovy.ast.stmt.BreakStatement
-import org.codehaus.groovy.ast.stmt.CaseStatement
-import org.codehaus.groovy.ast.stmt.CatchStatement
-import org.codehaus.groovy.ast.stmt.ContinueStatement
-import org.codehaus.groovy.ast.stmt.DoWhileStatement
-import org.codehaus.groovy.ast.stmt.EmptyStatement
-import org.codehaus.groovy.ast.stmt.ExpressionStatement
-import org.codehaus.groovy.ast.stmt.ForStatement
-import org.codehaus.groovy.ast.stmt.IfStatement
-import org.codehaus.groovy.ast.stmt.ReturnStatement
-import org.codehaus.groovy.ast.stmt.Statement
-import org.codehaus.groovy.ast.stmt.SwitchStatement
-import org.codehaus.groovy.ast.stmt.SynchronizedStatement
-import org.codehaus.groovy.ast.stmt.ThrowStatement
-import org.codehaus.groovy.ast.stmt.TryCatchStatement
-import org.codehaus.groovy.ast.stmt.WhileStatement
+import org.codehaus.groovy.ast.expr.*
+import org.codehaus.groovy.ast.stmt.*
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.BytecodeExpression
-import org.codehaus.groovy.classgen.VariableScopeVisitor
-import org.codehaus.groovy.control.SourceUnit
-import org.codehaus.groovy.syntax.Token
 
 @ToString(includeNames = true, includeFields = true)
 class BlackBoxVisitor extends CodeVisitorSupport {
 
 
-    final String PCLASSSIMPLENAME= this.getClass().getSimpleName()
-    final String PPACKAGENAME= this.getClass().getPackage().getName()
+    final String PCLASSSIMPLENAME = this.getClass().getSimpleName()
+    final String PPACKAGENAME = this.getClass().getPackage().getName()
     final BlackBoxEngine blackBoxEngine = BlackBoxEngine.getInstance()
     BlackBoxLevel blackBoxLevel
     AnnotationNode annotationNode
     BlackBoxTransformation blackBoxTransformation
-    
-    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode, SourceUnit iSource, BlackBoxTransformation iBlackBoxTransformation) {
+
+    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode, BlackBoxTransformation iBlackBoxTransformation) {
         blackBoxLevel = iBlackBoxLevel
         annotationNode = iAnnotationNode
         blackBoxTransformation = iBlackBoxTransformation
@@ -85,12 +30,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBlockStatement(BlockStatement iBlockStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBlockStatement", ["iBlockStatement": iBlockStatement])
         try {
-            List<Statement> statements = iBlockStatement.getStatements().getClass().newInstance() as List<Statement>
-            for (Statement statement : iBlockStatement.getStatements()) {
-                statements.addAll(blackBoxTransformation.decorateStatement(statement, blackBoxLevel))
-            }
-            iBlockStatement.getStatements().clear()
-            iBlockStatement.getStatements().addAll(statements)
+            decorateStatementList(iBlockStatement.getStatements())
             blackBoxEngine.result("iBlockStatement", iBlockStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -105,7 +45,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitForLoop", ["iForStatement": iForStatement])
         try {
             iForStatement.setCollectionExpression(blackBoxTransformation.decorateExpression(iForStatement.getCollectionExpression(), blackBoxLevel))
-            iForStatement.setLoopBlock(blackBoxTransformation.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel))
+            iForStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iForStatement.getLoopBlock(), blackBoxLevel)))
             blackBoxEngine.result("iForStatement", iForStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -129,13 +69,14 @@ class BlackBoxVisitor extends CodeVisitorSupport {
             blackBoxEngine.executionClose()
         }
     }
-/*
+
     @Override
     void visitDoWhileLoop(DoWhileStatement iDoWhileStatement) {
-        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitDoWhileLoop", ["loop": iDoWhileStatement])
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitDoWhileLoop", ["iDoWhileStatement": iDoWhileStatement])
         try {
+            iDoWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.decorateExpression(iDoWhileStatement.getBooleanExpression(), blackBoxLevel)))
+            iDoWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iDoWhileStatement.getLoopBlock(), blackBoxLevel)))
             blackBoxEngine.result("iDoWhileStatement", iDoWhileStatement)
-            super.visitDoWhileLoop(iDoWhileStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -148,8 +89,10 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitIfElse(IfStatement iIfStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitIfElse", ["iIfStatement": iIfStatement])
         try {
+            iIfStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.decorateExpression(iIfStatement.getBooleanExpression(), blackBoxLevel)))
+            iIfStatement.setIfBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iIfStatement.getIfBlock(), blackBoxLevel)))
+            iIfStatement.setElseBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iIfStatement.getElseBlock(), blackBoxLevel)))
             blackBoxEngine.result("iIfStatement", iIfStatement)
-            super.visitIfElse(iIfStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -162,8 +105,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitExpressionStatement(ExpressionStatement iExpressionStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitExpressionStatement", ["iExpressionStatement": iExpressionStatement])
         try {
+            iExpressionStatement.setExpression(blackBoxTransformation.decorateExpression(iExpressionStatement.getExpression(), blackBoxLevel))
             blackBoxEngine.result("iExpressionStatement", iExpressionStatement)
-            super.visitExpressionStatement(iExpressionStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -176,8 +119,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitReturnStatement(ReturnStatement iReturnStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitReturnStatement", ["iReturnStatement": iReturnStatement])
         try {
+            iReturnStatement.setExpression(blackBoxTransformation.decorateExpression(iReturnStatement.getExpression(), blackBoxLevel))
             blackBoxEngine.result("iReturnStatement", iReturnStatement)
-            super.visitReturnStatement(iReturnStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -190,8 +133,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitAssertStatement(AssertStatement iAssertStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitAssertStatement", ["iAssertStatement": iAssertStatement])
         try {
+            iAssertStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.decorateExpression(iAssertStatement.getBooleanExpression(), blackBoxLevel)))
+            iAssertStatement.setMessageExpression(blackBoxTransformation.decorateExpression(iAssertStatement.getMessageExpression(), blackBoxLevel))
             blackBoxEngine.result("iAssertStatement", iAssertStatement)
-            super.visitAssertStatement(iAssertStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -204,8 +148,12 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitTryCatchFinally(TryCatchStatement iTryCatchStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitTryCatchFinally", ["iTryCatchStatement": iTryCatchStatement])
         try {
+            iTryCatchStatement.setTryStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iTryCatchStatement.getTryStatement(), blackBoxLevel)))
+            for (CatchStatement catchStatement : iTryCatchStatement.getCatchStatements()) {
+                catchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(catchStatement.getCode(), blackBoxLevel)))
+            }
+            iTryCatchStatement.setFinallyStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iTryCatchStatement.getFinallyStatement(), blackBoxLevel)))
             blackBoxEngine.result("iTryCatchStatement", iTryCatchStatement)
-            super.visitTryCatchFinally(iTryCatchStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -218,8 +166,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     protected void visitEmptyStatement(EmptyStatement iEmptyStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "void ", ["iEmptyStatement ": iEmptyStatement])
         try {
-            blackBoxEngine.result("iEmptyStatement", iEmptyStatement)
             super.visitEmptyStatement(iEmptyStatement)
+            blackBoxEngine.result("iEmptyStatement", iEmptyStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -232,8 +180,12 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitSwitch(SwitchStatement iSwitchStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSwitch", ["iSwitchStatement": iSwitchStatement])
         try {
+            iSwitchStatement.setExpression(blackBoxTransformation.decorateExpression(iSwitchStatement.getExpression(), blackBoxLevel))
+            for (CaseStatement caseStatement : iSwitchStatement.getCaseStatements()) {
+                caseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(caseStatement.getCode(), blackBoxLevel)))
+            }
+            iSwitchStatement.setDefaultStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iSwitchStatement.getDefaultStatement(), blackBoxLevel)))
             blackBoxEngine.result("iSwitchStatement", iSwitchStatement)
-            super.visitSwitch(iSwitchStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -246,8 +198,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitCaseStatement(CaseStatement iCaseStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitCaseStatement", ["iCaseStatement": iCaseStatement])
         try {
+            iCaseStatement.setExpression(blackBoxTransformation.decorateExpression(iCaseStatement.getExpression(), blackBoxLevel))
+            iCaseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iCaseStatement.getCode(), blackBoxLevel)))
             blackBoxEngine.result("iCaseStatement", iCaseStatement)
-            super.visitCaseStatement(iCaseStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -260,8 +213,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBreakStatement(BreakStatement iBreakStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBreakStatement", ["iBreakStatement": iBreakStatement])
         try {
-            blackBoxEngine.result("iBreakStatement", iBreakStatement)
             super.visitBreakStatement(iBreakStatement)
+            blackBoxEngine.result("iBreakStatement", iBreakStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -274,8 +227,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitContinueStatement(ContinueStatement iContinueStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitContinueStatement", ["iContinueStatement": iContinueStatement])
         try {
-            blackBoxEngine.result("iContinueStatement", iContinueStatement)
             super.visitContinueStatement(iContinueStatement)
+            blackBoxEngine.result("iContinueStatement", iContinueStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -288,8 +241,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitSynchronizedStatement(SynchronizedStatement iSynchronizedStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSynchronizedStatement", ["iSynchronizedStatement": iSynchronizedStatement])
         try {
+            iSynchronizedStatement.setExpression(blackBoxTransformation.decorateExpression(iSynchronizedStatement.getExpression(), blackBoxLevel))
+            iSynchronizedStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iSynchronizedStatement.getCode(), blackBoxLevel)))
             blackBoxEngine.result("iSynchronizedStatement", iSynchronizedStatement)
-            super.visitSynchronizedStatement(iSynchronizedStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -302,8 +256,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitThrowStatement(ThrowStatement iThrowStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitThrowStatement", ["iThrowStatement": iThrowStatement])
         try {
+            iThrowStatement.setExpression(blackBoxTransformation.decorateExpression(iThrowStatement.getExpression(), blackBoxLevel))
             blackBoxEngine.result("iThrowStatement", iThrowStatement)
-            super.visitThrowStatement(iThrowStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -316,8 +270,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitMethodCallExpression(MethodCallExpression iMethodCallExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMethodCallExpression", ["iMethodCallExpression": iMethodCallExpression])
         try {
+            iMethodCallExpression.setObjectExpression(blackBoxTransformation.decorateExpression(iMethodCallExpression.getObjectExpression(), blackBoxLevel))
+            //iMethodCallExpression.setArguments(blackBoxTransformation.decorateExpression(iMethodCallExpression.getArguments(), blackBoxLevel))
             blackBoxEngine.result("iMethodCallExpression", iMethodCallExpression)
-            super.visitMethodCallExpression(iMethodCallExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -330,8 +285,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitStaticMethodCallExpression(StaticMethodCallExpression iStaticMethodCallExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitStaticMethodCallExpression", ["iStaticMethodCallExpression": iStaticMethodCallExpression])
         try {
-            blackBoxEngine.result("iStaticMethodCallExpression", iStaticMethodCallExpression)
             super.visitStaticMethodCallExpression(iStaticMethodCallExpression)
+//todo: improve Arguments handling (there is no setter method)
+            blackBoxEngine.result("iStaticMethodCallExpression", iStaticMethodCallExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -344,8 +300,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitConstructorCallExpression(ConstructorCallExpression iConstructorCallExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitConstructorCallExpression", ["iConstructorCallExpression": iConstructorCallExpression])
         try {
-            blackBoxEngine.result("iConstructorCallExpression", iConstructorCallExpression)
             super.visitConstructorCallExpression(iConstructorCallExpression)
+//todo: improve Arguments handling (there is no setter method)
+            blackBoxEngine.result("iConstructorCallExpression", iConstructorCallExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -358,8 +315,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBinaryExpression(BinaryExpression iBinaryExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBinaryExpression", ["iBinaryExpression": iBinaryExpression])
         try {
+            //todo: enhance left expression logging
+            iBinaryExpression.setRightExpression(blackBoxTransformation.decorateExpression(iBinaryExpression.getRightExpression(), blackBoxLevel))
             blackBoxEngine.result("iBinaryExpression", iBinaryExpression)
-            super.visitBinaryExpression(iBinaryExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -372,8 +330,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitTernaryExpression(TernaryExpression iTernaryExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitTernaryExpression", ["iTernaryExpression": iTernaryExpression])
         try {
-            blackBoxEngine.result("iTernaryExpression", iTernaryExpression)
             super.visitTernaryExpression(iTernaryExpression)
+            //todo: log ternary expression (it's fields are final)
+            blackBoxEngine.result("iTernaryExpression", iTernaryExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -386,8 +345,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitShortTernaryExpression(ElvisOperatorExpression iElvisOperatorExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitShortTernaryExpression", ["iElvisOperatorExpression": iElvisOperatorExpression])
         try {
-            blackBoxEngine.result("iElvisOperatorExpression", iElvisOperatorExpression)
             super.visitShortTernaryExpression(iElvisOperatorExpression)
+            blackBoxEngine.result("iElvisOperatorExpression", iElvisOperatorExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -400,8 +359,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitPostfixExpression(PostfixExpression iPostfixExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitPostfixExpression", ["iPostfixExpression": iPostfixExpression])
         try {
-            blackBoxEngine.result("iPostfixExpression", iPostfixExpression)
             super.visitPostfixExpression(iPostfixExpression)
+            blackBoxEngine.result("iPostfixExpression", iPostfixExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -414,8 +373,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitPrefixExpression(PrefixExpression iPrefixExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitPrefixExpression", ["iPrefixExpression": iPrefixExpression])
         try {
-            blackBoxEngine.result("iPrefixExpression", iPrefixExpression)
             super.visitPrefixExpression(iPrefixExpression)
+            blackBoxEngine.result("iPrefixExpression", iPrefixExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -428,8 +387,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBooleanExpression(BooleanExpression iBooleanExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBooleanExpression", ["iBooleanExpression": iBooleanExpression])
         try {
+            super.visitBooleanExpression(iBooleanExpression) //todo: enhance
             blackBoxEngine.result("iBooleanExpression", iBooleanExpression)
-            super.visitBooleanExpression(iBooleanExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -442,8 +401,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitNotExpression(NotExpression iNotExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitNotExpression", ["iNotExpression": iNotExpression])
         try {
-            blackBoxEngine.result("iNotExpression", iNotExpression)
             super.visitNotExpression(iNotExpression)
+            blackBoxEngine.result("iNotExpression", iNotExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -456,8 +415,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitClosureExpression(ClosureExpression iClosureExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitClosureExpression", ["iClosureExpression": iClosureExpression])
         try {
+            iClosureExpression.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.decorateStatement(iClosureExpression.getCode(), blackBoxLevel)))
             blackBoxEngine.result("iClosureExpression", iClosureExpression)
-            super.visitClosureExpression(iClosureExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -470,8 +429,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitTupleExpression(TupleExpression iTupleExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitTupleExpression", ["iTupleExpression": iTupleExpression])
         try {
+            decorateExpressionList(iTupleExpression.getExpressions())
             blackBoxEngine.result("iTupleExpression", iTupleExpression)
-            super.visitTupleExpression(iTupleExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -484,8 +443,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitListExpression(ListExpression iListExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitListExpression", ["iListExpression": iListExpression])
         try {
+            decorateExpressionList(iListExpression.getExpressions())
             blackBoxEngine.result("iListExpression", iListExpression)
-            super.visitListExpression(iListExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -498,8 +457,44 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitArrayExpression(ArrayExpression iArrayExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitArrayExpression", ["iArrayExpression": iArrayExpression])
         try {
-            blackBoxEngine.result("iArrayExpression", iArrayExpression)
-            super.visitArrayExpression(iArrayExpression)
+            decorateExpressionList(iArrayExpression.getExpressions())
+            decorateExpressionList(iArrayExpression.getSizeExpression())c
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
+    void decorateStatementList(List<Statement> statementList) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateStatementList", ["statementList": statementList])
+        try {
+            List<Statement> decoratedStatementsList = statementList.getClass().newInstance() as List<Statement>
+            for (Statement statement : statementList) {
+                decoratedStatementsList.addAll(blackBoxTransformation.decorateStatement(statement, blackBoxLevel))
+            }
+            statementList.clear()
+            statementList.addAll(decoratedStatementsList)
+            blackBoxEngine.result("decoratedStatementsList", decoratedStatementsList)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
+    void decorateExpressionList(List<Expression> expressionList) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateExpressionList", ["expressionList": expressionList])
+        try {
+            List<Expression> decoratedExpressionsList = expressionList.getClass().newInstance() as List<Expression>
+            for (Expression expression : expressionList) {
+                decoratedExpressionsList.addAll(blackBoxTransformation.decorateExpression(expression, blackBoxLevel))
+            }
+            expressionList.clear()
+            expressionList.addAll(decoratedExpressionsList)
+            blackBoxEngine.result("decoratedExpressionsList", decoratedExpressionsList)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -512,8 +507,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitMapExpression(MapExpression iMapExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMapExpression", ["iMapExpression": iMapExpression])
         try {
+            super.visitMapExpression(iMapExpression) //todo: improve
             blackBoxEngine.result("iMapExpression", iMapExpression)
-            super.visitMapExpression(iMapExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -526,8 +521,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitMapEntryExpression(MapEntryExpression iMapEntryExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMapEntryExpression", ["iMapEntryExpression": iMapEntryExpression])
         try {
+            iMapEntryExpression.setKeyExpression(blackBoxTransformation.decorateExpression(iMapEntryExpression.getKeyExpression(), blackBoxLevel))
+            iMapEntryExpression.setValueExpression(blackBoxTransformation.decorateExpression(iMapEntryExpression.getValueExpression(), blackBoxLevel))
             blackBoxEngine.result("iMapEntryExpression", iMapEntryExpression)
-            super.visitMapEntryExpression(iMapEntryExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -536,12 +532,12 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         }
     }
 
+ /*
     @Override
     void visitRangeExpression(RangeExpression iRangeExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitRangeExpression", ["iRangeExpression": iRangeExpression])
         try {
             blackBoxEngine.result("iRangeExpression", iRangeExpression)
-            super.visitRangeExpression(iRangeExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -555,7 +551,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadExpression", ["iSpreadExpression": iSpreadExpression])
         try {
             blackBoxEngine.result("iSpreadExpression", iSpreadExpression)
-            super.visitSpreadExpression(iSpreadExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -569,7 +564,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadMapExpression", ["iSpreadMapExpression": iSpreadMapExpression])
         try {
             blackBoxEngine.result("iSpreadMapExpression", iSpreadMapExpression)
-            super.visitSpreadMapExpression(iSpreadMapExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -583,7 +577,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMethodPointerExpression", ["iMethodPointerExpression": iMethodPointerExpression])
         try {
             blackBoxEngine.result("iMethodPointerExpression", iMethodPointerExpression)
-            super.visitMethodPointerExpression(iMethodPointerExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -597,7 +590,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryMinusExpression", ["iUnaryMinusExpression": iUnaryMinusExpression])
         try {
             blackBoxEngine.result("iUnaryMinusExpression", iUnaryMinusExpression)
-            super.visitUnaryMinusExpression(iUnaryMinusExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -611,7 +603,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryPlusExpression", ["iUnaryPlusExpression": iUnaryPlusExpression])
         try {
             blackBoxEngine.result("iUnaryPlusExpression", iUnaryPlusExpression)
-            super.visitUnaryPlusExpression(iUnaryPlusExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -625,7 +616,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBitwiseNegationExpression", ["iBitwiseNegationExpression": iBitwiseNegationExpression])
         try {
             blackBoxEngine.result("iBitwiseNegationExpression", iBitwiseNegationExpression)
-            super.visitBitwiseNegationExpression(iBitwiseNegationExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -639,7 +629,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitCastExpression", ["iCastExpression": iCastExpression])
         try {
             blackBoxEngine.result("iCastExpression", iCastExpression)
-            super.visitCastExpression(iCastExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -653,7 +642,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitConstantExpression", ["iConstantExpression": iConstantExpression])
         try {
             blackBoxEngine.result("iConstantExpression", iConstantExpression)
-            super.visitConstantExpression(iConstantExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -667,7 +655,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitClassExpression", ["iClassExpression": iClassExpression])
         try {
             blackBoxEngine.result("iClassExpression", iClassExpression)
-            super.visitClassExpression(iClassExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -681,7 +668,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitVariableExpression", ["iVariableExpression": iVariableExpression])
         try {
             blackBoxEngine.result("iVariableExpression", iVariableExpression)
-            super.visitVariableExpression(iVariableExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -695,7 +681,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitDeclarationExpression", ["iDeclarationExpression": iDeclarationExpression])
         try {
             blackBoxEngine.result("iDeclarationExpression", iDeclarationExpression)
-            super.visitDeclarationExpression(iDeclarationExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -709,7 +694,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitPropertyExpression", ["iPropertyExpression": iPropertyExpression])
         try {
             blackBoxEngine.result("iPropertyExpression", iPropertyExpression)
-            super.visitPropertyExpression(iPropertyExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -723,7 +707,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitAttributeExpression", ["iAttributeExpression": iAttributeExpression])
         try {
             blackBoxEngine.result("iAttributeExpression", iAttributeExpression)
-            super.visitAttributeExpression(iAttributeExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -737,7 +720,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitFieldExpression", ["iFieldExpression": iFieldExpression])
         try {
             blackBoxEngine.result("iFieldExpression", iFieldExpression)
-            super.visitFieldExpression(iFieldExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -751,7 +733,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitGStringExpression", ["iGStringExpression": iGStringExpression])
         try {
             blackBoxEngine.result("iGStringExpression", iGStringExpression)
-            super.visitGStringExpression(iGStringExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -765,7 +746,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitListOfExpressions", ["iExpressionList": iExpressionList])
         try {
             blackBoxEngine.result("iExpressionList", iExpressionList)
-            super.visitListOfExpressions(iExpressionList)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -779,7 +759,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitCatchStatement", ["iCatchStatement": iCatchStatement])
         try {
             blackBoxEngine.result("iCatchStatement", iCatchStatement)
-            super.visitCatchStatement(iCatchStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -793,7 +772,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitArgumentlistExpression", ["iArgumentListExpression": iArgumentListExpression])
         try {
             blackBoxEngine.result("iArgumentListExpression", iArgumentListExpression)
-            super.visitArgumentlistExpression(iArgumentListExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -807,7 +785,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitClosureListExpression", ["iClosureListExpression": iClosureListExpression])
         try {
             blackBoxEngine.result("iClosureListExpression", iClosureListExpression)
-            super.visitClosureListExpression(iClosureListExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -821,7 +798,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBytecodeExpression", ["iBytecodeExpression": iBytecodeExpression])
         try {
             blackBoxEngine.result("iBytecodeExpression", iBytecodeExpression)
-            super.visitBytecodeExpression(iBytecodeExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -829,5 +805,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
             blackBoxEngine.executionClose()
         }
     }
+
     */
 }

@@ -106,7 +106,10 @@ class BlackBoxEngine {
         xmlExecution = xmlExpressionEvaluation
         try {
             Object evaluationResult = iClosure.call()
-            xmlExpressionEvaluation.setResult(TraceSerializer.createXMLTraceTrace("evaluationResult", evaluationResult))
+            //Avoid logging empty results such as for void method call expressions
+            if (evaluationResult != null) {
+                xmlExpressionEvaluation.setResult(TraceSerializer.createXMLTraceTrace("evaluationResult", evaluationResult))
+            }
             return evaluationResult
         } catch (Throwable throwable) {
             exception(throwable)
@@ -117,6 +120,7 @@ class BlackBoxEngine {
     }
 
     void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
+        //todo: skip BlockStatement and ExpressionStatement logging
         XMLStatementExecution newXmlStatementExecution = new XMLStatementExecution()
         newXmlStatementExecution.parentExecution = xmlExecution
         newXmlStatementExecution.setStartDateTime(getXMLGregorianCalendar())
