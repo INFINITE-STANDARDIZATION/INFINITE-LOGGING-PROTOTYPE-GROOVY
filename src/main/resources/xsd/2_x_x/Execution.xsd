@@ -13,7 +13,6 @@
                     <xs:element type="Trace" name="argument" minOccurs="0" maxOccurs="unbounded"/>
                     <xs:element type="Event" name="event" minOccurs="0" maxOccurs="unbounded"/>
                     <xs:element type="ExecutionTrailer" name="executionTrailer" minOccurs="0"/>
-                    <!--<xs:element type="Execution" name="parentExecution" minOccurs="0"/>-->
                     <xs:element type="Trace" name="result" minOccurs="0"/>
                 </xs:sequence>
                 <xs:attribute use="required" name="startDateTime" type="xs:dateTime"/>

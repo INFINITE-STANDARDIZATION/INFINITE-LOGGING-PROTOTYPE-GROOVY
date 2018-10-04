@@ -15,11 +15,16 @@ import org.codehaus.groovy.ast.expr.ClosureExpression
 import org.codehaus.groovy.ast.expr.ConstantExpression
 import org.codehaus.groovy.ast.expr.ConstructorCallExpression
 import org.codehaus.groovy.ast.expr.DeclarationExpression
+import org.codehaus.groovy.ast.expr.EmptyExpression
 import org.codehaus.groovy.ast.expr.Expression
 import org.codehaus.groovy.ast.expr.MethodCallExpression
 import org.codehaus.groovy.ast.expr.PropertyExpression
 import org.codehaus.groovy.ast.stmt.BlockStatement
+import org.codehaus.groovy.ast.stmt.BreakStatement
+import org.codehaus.groovy.ast.stmt.ContinueStatement
 import org.codehaus.groovy.ast.stmt.EmptyStatement
+import org.codehaus.groovy.ast.stmt.ExpressionStatement
+import org.codehaus.groovy.ast.stmt.ReturnStatement
 import org.codehaus.groovy.ast.stmt.Statement
 import org.codehaus.groovy.ast.stmt.ThrowStatement
 import org.codehaus.groovy.ast.stmt.TryCatchStatement
@@ -84,8 +89,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     Expression decorateExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
         try {
-            if (iExpression == null) {
-                return blackBoxEngine.result("[iExpression]", [iExpression]) as Expression
+            if (iExpression == null || iExpression instanceof EmptyExpression) {
+                return blackBoxEngine.result("iExpression", iExpression) as Expression
             }
             if (!(iExpression instanceof DeclarationExpression)) {//TODO: find a way to log Declaration Expression evaluation.
                 if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
@@ -126,19 +131,44 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     //TODO: add owner name and owner child placeholder names
 
+    List<Statement> decorateControlStatement(Statement iStatement) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateStatement", ["iStatement": iStatement])
+        try {
+            String iOrigStatementCode = codeString(iStatement)
+            List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
+            decoratedStatements.add(text2statement("""automaticBlackBox.handleControlStatement("${
+                iStatement.getClass().getSimpleName()
+            }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
+                iStatement.getLastColumnNumber()
+            }, ${
+                iStatement.getLineNumber()
+            }, ${iStatement.getLastLineNumber()})"""))
+            decoratedStatements.add(iStatement)
+            iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+            return blackBoxEngine.result("decoratedStatements", decoratedStatements) as List<Statement>
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
     List<Statement> decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
         try {
-            if (iStatement == null) {
+            if (iStatement == null || iStatement instanceof EmptyStatement) {
                 return blackBoxEngine.result("[iStatement]", [iStatement]) as List<Statement>
             }
-            if (iBlackBoxLevel.value() < BlackBoxLevel.STATEMENT.value()) {
+            if (iBlackBoxLevel.value() < BlackBoxLevel.STATEMENT.value() || iStatement instanceof BlockStatement || iStatement instanceof ExpressionStatement) {
                 iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                 return blackBoxEngine.result("[iStatement]", [iStatement]) as List<Statement>
             }
+            if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement) {
+                return blackBoxEngine.result("decorateControlStatement(iStatement)", decorateControlStatement(iStatement)) as List<Statement>
+            }
             String iOrigStatementCode = codeString(iStatement)
             List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
-            Statement finallyBlock
             decoratedStatements.add(text2statement("""automaticBlackBox.statementExecutionOpen("${
                 iStatement.getClass().getSimpleName()
             }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
@@ -147,8 +177,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 iStatement.getLineNumber()
             }, ${iStatement.getLastLineNumber()})"""))
             decoratedStatements.add(iStatement)
-            finallyBlock = text2statement("automaticBlackBox.executionClose()")
-            decoratedStatements.add(finallyBlock)
+            decoratedStatements.add(text2statement("automaticBlackBox.executionClose()"))
             iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
             return blackBoxEngine.result("decoratedStatements", decoratedStatements) as List<Statement>
         } catch (Throwable throwable) {
@@ -182,10 +211,10 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                     iMethodNode.getLastLineNumber()
                 })""", methodParameters))
                 finallyBlock = text2statement("automaticBlackBox.executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(automaticThrowable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
             } else if (iBlackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
                 finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(throwable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
+                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(automaticThrowable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
             } else {
                 iMethodNode.getCode().visit(blackBoxVisitor)//<<<<<<<<<<<<<<<<<<<
                 return blackBoxEngine.result("iMethodNode.getCode()", iMethodNode.getCode()) as Statement
@@ -224,12 +253,12 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         BlockStatement throwBlock = new BlockStatement()
         throwBlock.addStatement(text2statement(iLogErrorCodeLine, iParameters))
         throwBlock.addStatement(createThrowStatement(iAnnotationNode))
-        tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "throwable"), throwBlock))
+        tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "automaticThrowable"), throwBlock))
         return tryCatchStatement
     }
 
     static Statement createThrowStatement(AnnotationNode iAnnotationNode) {
-        ThrowStatement throwStatement = GeneralUtils.throwS(GeneralUtils.varX("throwable"))
+        ThrowStatement throwStatement = GeneralUtils.throwS(GeneralUtils.varX("automaticThrowable"))
         iAnnotationNode.setSourcePosition(iAnnotationNode)
         return throwStatement
     }

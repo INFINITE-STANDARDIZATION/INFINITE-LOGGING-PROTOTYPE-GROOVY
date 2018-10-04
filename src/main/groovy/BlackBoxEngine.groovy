@@ -156,10 +156,10 @@ class BlackBoxEngine {
         xmlExecution = newXmlExecution
     }
 
-    void executionClose() {
+    void executionClose(Boolean iFailed = false) {
         XMLExecutionTrailer xmlExecutionTrailer = new XMLExecutionTrailer()
         xmlExecutionTrailer.setEndDateTime(getXMLGregorianCalendar())
-        if (xmlExecution.isFailed == true) {
+        if (xmlExecution.isFailed == true || iFailed) {
             xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.UNHANDLED_EXCEPTION)
         } else {
             xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.NORMAL)
@@ -184,7 +184,29 @@ class BlackBoxEngine {
         xmlExecution = xmlExecution.parentExecution
     }
 
-    private void logOpen() {
+    void handleControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
+        statementExecutionOpen(iStatementName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber)
+        executionClose()
+        switch (iStatementName) {
+            case "ReturnStatement":
+                while (!(xmlExecution instanceof XMLMethodExecution || (xmlExecution instanceof XMLExpressionEvaluation && xmlExecution.getExpressionName() == "ClosureExpression"))) {
+                    executionClose()
+                }
+                break
+            case "BreakStatement":
+                while (!(xmlExecution instanceof XMLStatementExecution && ["DoWhileStatement", "ForStatement", "WhileStatement", "SwitchStatement"].contains(xmlExecution.getStatementName()))) {
+                    executionClose()
+                }
+                break
+            case "ContinueStatement":
+                while (!(xmlExecution instanceof XMLStatementExecution && ["DoWhileStatement", "ForStatement", "WhileStatement"].contains(xmlExecution.getStatementName()))) {
+                    executionClose()
+                }
+                break
+        }
+    }
+
+    void logOpen() {
         XMLLog xmlLog = new XMLLog()
         xmlExecution = xmlLog
         xmlLog.setCurrentLogName(Thread.currentThread().getName())
@@ -210,12 +232,18 @@ class BlackBoxEngine {
         xmlException.setExceptionClassName(throwable.getClass().getCanonicalName())
         xmlException.setDateTime(getXMLGregorianCalendar())
         while (!(xmlExecution instanceof XMLMethodExecution)) {
-            xmlExecution.getEvent().add(xmlException)
-            xmlExecution.isFailed = true
-            executionClose()
+            error(xmlException.getMessage())
+            executionClose(true)
         }
-        xmlExecution.getEvent().add(xmlException)
+        ((XMLMethodExecution)xmlExecution).setException(xmlException)
         xmlExecution.isFailed = true
+    }
+
+    void error(String iMessage) {
+        XMLError xmlError = new XMLError()
+        xmlError.setMessage(iMessage)
+        xmlError.setDateTime(getXMLGregorianCalendar())
+        xmlExecution.getEvent().add(xmlError)
     }
 
     void stdout(String iMessage) {

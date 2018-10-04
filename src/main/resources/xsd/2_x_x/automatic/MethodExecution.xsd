@@ -8,6 +8,9 @@
     <xs:complexType name="MethodExecution">
         <xs:complexContent>
             <xs:extension base="Execution">
+                <xs:sequence>
+                    <xs:element type="Exception" name="exception" minOccurs="0"/>
+                </xs:sequence>
                 <xs:attribute name="methodName" type="xs:string" use="required"/>
                 <xs:attribute name="className" type="xs:string" use="required"/>
             </xs:extension>
