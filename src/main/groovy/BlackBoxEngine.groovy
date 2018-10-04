@@ -92,7 +92,7 @@ class BlackBoxEngine {
         return lXMLGregorianCalendar
     }
 
-    Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure) {
+    Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName) {
         XMLExpressionEvaluation xmlExpressionEvaluation = new XMLExpressionEvaluation()
         xmlExpressionEvaluation.parentExecution = xmlExecution
         xmlExpressionEvaluation.setStartDateTime(getXMLGregorianCalendar())
@@ -102,6 +102,7 @@ class BlackBoxEngine {
         xmlExpressionEvaluation.setLastColumnNumber(iLastColumnNumber as BigInteger)
         xmlExpressionEvaluation.setLineNumber(iLineNumber as BigInteger)
         xmlExpressionEvaluation.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlExpressionEvaluation.setNodeSourceName(iNodeSourceName)
         xmlExecution.getEvent().add(xmlExpressionEvaluation)
         xmlExecution = xmlExpressionEvaluation
         try {
@@ -119,7 +120,7 @@ class BlackBoxEngine {
         }
     }
 
-    void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
+    void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
         //todo: skip BlockStatement and ExpressionStatement logging
         XMLStatementExecution newXmlStatementExecution = new XMLStatementExecution()
         newXmlStatementExecution.parentExecution = xmlExecution
@@ -130,6 +131,7 @@ class BlackBoxEngine {
         newXmlStatementExecution.setLastColumnNumber(iLastColumnNumber as BigInteger)
         newXmlStatementExecution.setLineNumber(iLineNumber as BigInteger)
         newXmlStatementExecution.setLastLineNumber(iLastLineNumber as BigInteger)
+        newXmlStatementExecution.setNodeSourceName(iNodeSourceName)
         xmlExecution.getEvent().add(newXmlStatementExecution)
         xmlExecution = newXmlStatementExecution
     }
@@ -184,8 +186,8 @@ class BlackBoxEngine {
         xmlExecution = xmlExecution.parentExecution
     }
 
-    void handleControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber) {
-        statementExecutionOpen(iStatementName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber)
+    void handleControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
+        statementExecutionOpen(iStatementName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iNodeSourceName)
         executionClose()
         switch (iStatementName) {
             case "ReturnStatement":

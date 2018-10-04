@@ -86,8 +86,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return constantExpression.getValue() as BlackBoxLevel
     }
 
-    Expression decorateExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
+    Expression transformExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iNodeSourceName) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
         try {
             if (iExpression == null || iExpression instanceof EmptyExpression) {
                 return blackBoxEngine.result("iExpression", iExpression) as Expression
@@ -110,7 +110,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                                 GeneralUtils.constX(iExpression.getLastColumnNumber()),
                                 GeneralUtils.constX(iExpression.getLineNumber()),
                                 GeneralUtils.constX(iExpression.getLastLineNumber()),
-                                closureExpression
+                                closureExpression,
+                                GeneralUtils.constX(iNodeSourceName)
                         )
                 )
                 methodCallExpression.copyNodeMetaData(iExpression)
@@ -131,8 +132,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     //TODO: add owner name and owner child placeholder names
 
-    List<Statement> decorateControlStatement(Statement iStatement) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateStatement", ["iStatement": iStatement])
+    List<Statement> transformControlStatement(Statement iStatement, String iNodeSourceName) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformStatement", ["iStatement": iStatement])
         try {
             String iOrigStatementCode = codeString(iStatement)
             List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
@@ -142,7 +143,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 iStatement.getLastColumnNumber()
             }, ${
                 iStatement.getLineNumber()
-            }, ${iStatement.getLastLineNumber()})"""))
+            }, ${iStatement.getLastLineNumber()}, "${iNodeSourceName}")"""))
             decoratedStatements.add(iStatement)
             iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
             return blackBoxEngine.result("decoratedStatements", decoratedStatements) as List<Statement>
@@ -154,8 +155,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
-    List<Statement> decorateStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
+    List<Statement> transformStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel, String iNodeSourceName) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
         try {
             if (iStatement == null || iStatement instanceof EmptyStatement) {
                 return blackBoxEngine.result("[iStatement]", [iStatement]) as List<Statement>
@@ -165,7 +166,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 return blackBoxEngine.result("[iStatement]", [iStatement]) as List<Statement>
             }
             if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement) {
-                return blackBoxEngine.result("decorateControlStatement(iStatement)", decorateControlStatement(iStatement)) as List<Statement>
+                return blackBoxEngine.result("transformControlStatement(iStatement)", transformControlStatement(iStatement, iNodeSourceName)) as List<Statement>
             }
             String iOrigStatementCode = codeString(iStatement)
             List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
@@ -175,7 +176,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 iStatement.getLastColumnNumber()
             }, ${
                 iStatement.getLineNumber()
-            }, ${iStatement.getLastLineNumber()})"""))
+            }, ${iStatement.getLastLineNumber()}, "${iNodeSourceName}")"""))
             decoratedStatements.add(iStatement)
             decoratedStatements.add(text2statement("automaticBlackBox.executionClose()"))
             iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<

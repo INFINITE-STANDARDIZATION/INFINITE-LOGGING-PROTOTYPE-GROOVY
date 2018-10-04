@@ -10,6 +10,7 @@
                 <xs:sequence>
                     <xs:element name="restoredScriptCode" type="xs:string"/>
                 </xs:sequence>
+                <xs:attribute name="nodeSourceName" type="xs:string"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>
