@@ -497,6 +497,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         }
     }
 
+    //todo: log return for all blackbox levels
     void decorateExpressionList(List<Expression> expressionList, String iNodeSourceName) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateExpressionList", ["expressionList": expressionList])
         try {

@@ -40,6 +40,11 @@ class BlackBoxEngine {
             void println(String string) {
                 getInstance().stdout(string)
             }
+
+            @Override
+            String toString() {
+                return "BlackBox out wrapper: " + super.toString()
+            }
         }
         System.setOut(printStream)
         addShutdownHook {
