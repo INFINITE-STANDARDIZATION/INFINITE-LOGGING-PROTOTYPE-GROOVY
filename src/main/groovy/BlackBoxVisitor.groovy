@@ -123,7 +123,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitReturnStatement(ReturnStatement iReturnStatement) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitReturnStatement", ["iReturnStatement": iReturnStatement])
         try {
-            iReturnStatement.setExpression(blackBoxTransformation.transformExpression(iReturnStatement.getExpression(), blackBoxLevel, "iReturnStatement.getExpression()"))
+            iReturnStatement.setExpression(blackBoxTransformation.transformReturnStatementExpression(iReturnStatement.getExpression(), blackBoxLevel, "iReturnStatement.getExpression()", BlackBoxTransformation.codeString(iReturnStatement)))
             blackBoxEngine.result("iReturnStatement", iReturnStatement)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

@@ -86,6 +86,51 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return constantExpression.getValue() as BlackBoxLevel
     }
 
+    Expression transformReturnStatementExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iNodeSourceName, String iReturnStatementCodeString) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
+        try {
+            if (iExpression == null || iExpression instanceof EmptyExpression) {
+                return blackBoxEngine.result("iExpression", iExpression) as Expression
+            }
+            if (!(iExpression instanceof DeclarationExpression)) {//TODO: find a way to log Declaration Expression evaluation.
+                if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
+                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                    return blackBoxEngine.result("iExpression", iExpression) as Expression
+                }
+                String iOrigExpressionCode = codeString(iExpression)
+                ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
+                closureExpression.setVariableScope(new VariableScope())
+                MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                        GeneralUtils.varX("automaticBlackBox"),
+                        "handleReturn",
+                        GeneralUtils.args(
+                                GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                                GeneralUtils.constX(iOrigExpressionCode),
+                                GeneralUtils.constX(iExpression.getColumnNumber()),
+                                GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                                GeneralUtils.constX(iExpression.getLineNumber()),
+                                GeneralUtils.constX(iExpression.getLastLineNumber()),
+                                closureExpression,
+                                GeneralUtils.constX(iNodeSourceName),
+                                GeneralUtils.constX(iReturnStatementCodeString)
+                        )
+                )
+                methodCallExpression.copyNodeMetaData(iExpression)
+                methodCallExpression.setSourcePosition(iExpression)
+                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                return blackBoxEngine.result("methodCallExpression", methodCallExpression) as Expression
+            } else {
+                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                return blackBoxEngine.result("iExpression", iExpression) as Expression
+            }
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
     Expression transformExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iNodeSourceName) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
         try {
@@ -129,8 +174,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             blackBoxEngine.executionClose()
         }
     }
-
-    //TODO: add owner name and owner child placeholder names
 
     List<Statement> transformControlStatement(Statement iStatement, String iNodeSourceName) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformStatement", ["iStatement": iStatement])

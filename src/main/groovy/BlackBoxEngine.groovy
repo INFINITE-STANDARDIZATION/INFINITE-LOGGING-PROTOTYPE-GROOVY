@@ -92,6 +92,16 @@ class BlackBoxEngine {
         return lXMLGregorianCalendar
     }
 
+    Object handleReturn(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName, String iReturnStatementCodeString) {
+        def check = xmlExecution
+        while (!(check instanceof XMLMethodExecution || (check instanceof XMLExpressionEvaluation && check.getExpressionName() == "ClosureExpression"))) {
+            check = check.parentExecution
+        }
+        Object res = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
+        check.setResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, res))
+        return res
+    }
+
     Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName) {
         XMLExpressionEvaluation xmlExpressionEvaluation = new XMLExpressionEvaluation()
         xmlExpressionEvaluation.parentExecution = xmlExecution
@@ -109,7 +119,7 @@ class BlackBoxEngine {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpressionEvaluation.setResult(TraceSerializer.createXMLTraceTrace("evaluationResult", evaluationResult))
+                xmlExpressionEvaluation.setExpressionResult(TraceSerializer.createXMLTraceTrace(iRestoredScriptCode/*todo: parent*/, evaluationResult))
             }
             return evaluationResult
         } catch (Throwable throwable) {
