@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<xs:schema elementFormDefault="qualified"
+           targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
+           xmlns:xs="http://www.w3.org/2001/XMLSchema">
+    <xs:include schemaLocation="ASTNodeList.xsd"/>
+    <xs:include schemaLocation="TraceList.xsd"/>
+    <xs:complexType name="ASTNode">
+        <xs:sequence>
+            <xs:element name="restoredScriptCode" type="xs:string"/>
+            <xs:element type="ASTNodeList" name="astNodeList" minOccurs="0"/>
+        </xs:sequence>
+        <xs:attribute name="startDateTime" type="xs:dateTime" use="required" />
+        <xs:attribute name="sourceNodeName" type="xs:string"/>
+        <xs:attribute name="lineNumber" type="xs:integer"/>
+        <xs:attribute name="columnNumber" type="xs:integer"/>
+        <xs:attribute name="lastLineNumber" type="xs:integer"/>
+        <xs:attribute name="lastColumnNumber" type="xs:integer"/>
+    </xs:complexType>
+</xs:schema>

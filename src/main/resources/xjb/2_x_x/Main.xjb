@@ -16,13 +16,5 @@
             </jxb:nameXmlTransform>
         </jxb:schemaBindings>
     </jxb:bindings>
-    <!--<jxb:bindings>
-        <jxb:bindings schemaLocation="../../../../../src/main/resources/xsd/2_x_x/Execution.xsd"
-                node="//xs:complexType[@name='Execution']//xs:complexContent//xs:extension//xs:sequence//xs:element[@name='parentExecution']">
-            <annox:annotate>
-                <annox:annotate annox:class="javax.xml.bind.annotation.XmlTransient"/>
-            </annox:annotate>
-        </jxb:bindings>
-    </jxb:bindings>-->
 
 </jxb:bindings>

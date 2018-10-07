@@ -3,10 +3,10 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="../Message.xsd"/>
-    <xs:complexType name="Info">
-        <xs:complexContent>
-            <xs:extension base="Message"/>
-        </xs:complexContent>
+    <xs:complexType name="Exception">
+        <xs:sequence>
+            <xs:element name="exceptionStackTrace" type="xs:string"/>
+        </xs:sequence>
+        <xs:attribute use="required" name="exceptionDateTime" type="xs:dateTime"/>
     </xs:complexType>
 </xs:schema>

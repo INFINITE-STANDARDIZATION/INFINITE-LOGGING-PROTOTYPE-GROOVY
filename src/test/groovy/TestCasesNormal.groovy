@@ -7,7 +7,7 @@ class TestCasesNormal {
     }
 
     void run() {
-        BlackBoxEngine.getInstance().logOpen() //just removing compilation data from log
+        BlackBoxEngine.getInstance().initRootAstNode() //just removing compilation data from log
         misc()
         visitBlockStatementNoneLevel()
         visitBlockStatementMethodErrorLevel()

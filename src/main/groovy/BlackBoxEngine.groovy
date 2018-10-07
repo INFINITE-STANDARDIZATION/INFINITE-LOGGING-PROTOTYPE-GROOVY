@@ -1,28 +1,21 @@
 package groovy
 
-import groovy.inspect.swingui.AstNodeToScriptVisitor
+
 import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.codehaus.groovy.ast.*
-import org.codehaus.groovy.ast.builder.AstBuilder
-import org.codehaus.groovy.ast.expr.*
-import org.codehaus.groovy.ast.stmt.*
-import org.codehaus.groovy.ast.tools.GeneralUtils
-import org.codehaus.groovy.control.CompilePhase
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
-import java.lang.management.ManagementFactory
 
 @Slf4j
 class BlackBoxEngine {
 
     public static ThreadLocal blackBoxEngineThreadLocal = new ThreadLocal()
 
-    XMLExecution xmlExecution
+    XMLASTNode astNode
 
     ConfigObject configObject
 
@@ -35,21 +28,9 @@ class BlackBoxEngine {
     final String PPACKAGENAME = this.getClass().getPackage().getName()
 
     BlackBoxEngine() {
-        PrintStream printStream = new PrintStream(System.out) {
-            @Override
-            void println(String string) {
-                getInstance().stdout(string)
-            }
-
-            @Override
-            String toString() {
-                return "BlackBox out wrapper: " + super.toString()
-            }
-        }
-        System.setOut(printStream)
         addShutdownHook {
             synchronized (this) {
-                while (xmlExecution != null) {
+                while (astNode != null) {
                     executionClose()
                 }
             }
@@ -65,8 +46,7 @@ class BlackBoxEngine {
     static BlackBoxEngine getInstance() {
         BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class) as BlackBoxEngine
         if (blackBoxEngine == null) {
-            XMLExecution.getMetaClass().parentExecution = null
-            XMLExecution.getMetaClass().isFailed = null
+            XMLASTNode.getMetaClass().parentAstNode = null
             blackBoxEngine = new BlackBoxEngine()
             blackBoxEngineThreadLocal.set(blackBoxEngine)
         }
@@ -79,9 +59,9 @@ class BlackBoxEngine {
         String iTagString = "<"
         switch (iXmlExecution) {
             case XMLLog: iTagString += """log xmlns="https://i-t.io/logging/groovy/2_x_x/Main" """; break
-            case XMLMethodExecution: iTagString += """event xsi:type="MethodExecution" """; break
-            case XMLStatementExecution: iTagString += """event xsi:type="StatementExecution" """; break
-            case XMLExpressionEvaluation: iTagString += """event xsi:type=ExpressionEvaluation" """; break
+            case XMLMethodNode: iTagString += """event xsi:type="MethodExecution" """; break
+            case XMLStatement: iTagString += """event xsi:type="StatementExecution" """; break
+            case XMLExpression: iTagString += """event xsi:type=ExpressionEvaluation" """; break
         }
         for (k in iXmlExecution.getProperties().keySet()) {
             iTagString += """ $k="${XmlUtil.escapeXml(iXmlExecution.getProperties().get(k).toString())}" """
@@ -98,33 +78,41 @@ class BlackBoxEngine {
     }
 
     Object handleReturn(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName, String iReturnStatementCodeString) {
-        def check = xmlExecution
-        while (!(check instanceof XMLMethodExecution || (check instanceof XMLExpressionEvaluation && check.getExpressionName() == "ClosureExpression"))) {
-            check = check.parentExecution
+        XMLASTNode astNodeForChecking = astNode
+        while (!(astNodeForChecking instanceof XMLMethodNode || (astNodeForChecking instanceof XMLExpression && astNodeForChecking.getExpressionName() == "ClosureExpression"))) {
+            astNodeForChecking = astNodeForChecking.parentAstNode
         }
-        Object res = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
-        check.setResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, res))
-        return res
+        Object expressionResult = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
+        switch (astNodeForChecking) {
+            case XMLMethodNode:
+                astNodeForChecking.setMethodResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, expressionResult))
+                break
+            case XMLExpression:
+                astNodeForChecking.setExpressionResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, expressionResult))
+                break
+        }
+        return expressionResult
     }
 
     Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName) {
-        XMLExpressionEvaluation xmlExpressionEvaluation = new XMLExpressionEvaluation()
-        xmlExpressionEvaluation.parentExecution = xmlExecution
-        xmlExpressionEvaluation.setStartDateTime(getXMLGregorianCalendar())
-        xmlExpressionEvaluation.setExpressionName(iExpressionName)
-        xmlExpressionEvaluation.setRestoredScriptCode(iRestoredScriptCode)
-        xmlExpressionEvaluation.setColumnNumber(iColumnNumber as BigInteger)
-        xmlExpressionEvaluation.setLastColumnNumber(iLastColumnNumber as BigInteger)
-        xmlExpressionEvaluation.setLineNumber(iLineNumber as BigInteger)
-        xmlExpressionEvaluation.setLastLineNumber(iLastLineNumber as BigInteger)
-        xmlExpressionEvaluation.setNodeSourceName(iNodeSourceName)
-        xmlExecution.getEvent().add(xmlExpressionEvaluation)
-        xmlExecution = xmlExpressionEvaluation
+        XMLExpression xmlExpression = new XMLExpression()
+        xmlExpression.parentAstNode = astNode
+        xmlExpression.setAstNodeList(new XMLASTNodeList())
+        xmlExpression.setStartDateTime(getXMLGregorianCalendar())
+        xmlExpression.setExpressionName(iExpressionName)
+        xmlExpression.setRestoredScriptCode(iRestoredScriptCode)
+        xmlExpression.setColumnNumber(iColumnNumber as BigInteger)
+        xmlExpression.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        xmlExpression.setLineNumber(iLineNumber as BigInteger)
+        xmlExpression.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlExpression.setSourceNodeName(iNodeSourceName)
+        astNode.getAstNodeList().getAstNode().add(xmlExpression)
+        astNode = xmlExpression
         try {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpressionEvaluation.setExpressionResult(TraceSerializer.createXMLTraceTrace(iRestoredScriptCode/*todo: parent*/, evaluationResult))
+                xmlExpression.setExpressionResult(TraceSerializer.createXMLTraceTrace(iRestoredScriptCode/*todo: parent*/, evaluationResult))
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -136,69 +124,56 @@ class BlackBoxEngine {
     }
 
     void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
-        //todo: skip BlockStatement and ExpressionStatement logging
-        XMLStatementExecution newXmlStatementExecution = new XMLStatementExecution()
-        newXmlStatementExecution.parentExecution = xmlExecution
-        newXmlStatementExecution.setStartDateTime(getXMLGregorianCalendar())
-        newXmlStatementExecution.setStatementName(iStatementName)
-        newXmlStatementExecution.setRestoredScriptCode(iRestoredScriptCode)
-        newXmlStatementExecution.setColumnNumber(iColumnNumber as BigInteger)
-        newXmlStatementExecution.setLastColumnNumber(iLastColumnNumber as BigInteger)
-        newXmlStatementExecution.setLineNumber(iLineNumber as BigInteger)
-        newXmlStatementExecution.setLastLineNumber(iLastLineNumber as BigInteger)
-        newXmlStatementExecution.setNodeSourceName(iNodeSourceName)
-        xmlExecution.getEvent().add(newXmlStatementExecution)
-        xmlExecution = newXmlStatementExecution
+        XMLStatement xmlStatement = new XMLStatement()
+        xmlStatement.parentAstNode = astNode
+        xmlStatement.setAstNodeList(new XMLASTNodeList())
+        xmlStatement.setStartDateTime(getXMLGregorianCalendar())
+        xmlStatement.setStatementName(iStatementName)
+        xmlStatement.setRestoredScriptCode(iRestoredScriptCode)
+        xmlStatement.setColumnNumber(iColumnNumber as BigInteger)
+        xmlStatement.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        xmlStatement.setLineNumber(iLineNumber as BigInteger)
+        xmlStatement.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlStatement.setSourceNodeName(iNodeSourceName)
+        astNode.getAstNodeList().getAstNode().add(xmlStatement)
+        astNode = xmlStatement
     }
 
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap, Integer iColumnNumber = null, Integer iLastColumnNumber = null, Integer iLineNumber = null, Integer iLastLineNumber = null) {
         //todo: "implicit" error logging - print log only when method has status failed, and save arguments
-        if (xmlExecution == null) {
-            logOpen()
+        if (astNode == null) {
+            initRootAstNode()
         }
-        XMLMethodExecution newXmlExecution = new XMLMethodExecution()
-        newXmlExecution.parentExecution = xmlExecution
-        newXmlExecution.setStartDateTime(getXMLGregorianCalendar())
-        newXmlExecution.setMethodName(iMethodName)
-        newXmlExecution.setClassName(iPackageName + "." + iClassSimpleName)
-        newXmlExecution.setColumnNumber(iColumnNumber as BigInteger)
-        newXmlExecution.setLastColumnNumber(iLastColumnNumber as BigInteger)
-        newXmlExecution.setLineNumber(iLineNumber as BigInteger)
-        newXmlExecution.setLastLineNumber(iLastLineNumber as BigInteger)
+        XMLMethodNode xmlMethodNode = new XMLMethodNode()
+        xmlMethodNode.parentAstNode = astNode
+        xmlMethodNode.setAstNodeList(new XMLASTNodeList())
+        xmlMethodNode.setStartDateTime(getXMLGregorianCalendar())
+        xmlMethodNode.setMethodName(iMethodName)
+        xmlMethodNode.setClassName(iPackageName + "." + iClassSimpleName)
+        xmlMethodNode.setColumnNumber(iColumnNumber as BigInteger)
+        xmlMethodNode.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        xmlMethodNode.setLineNumber(iLineNumber as BigInteger)
+        xmlMethodNode.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlMethodNode.setArgumentTraceList(new XMLTraceList())
         for (methodArgumentName in methodArgumentMap.keySet()) {
             XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentName, methodArgumentMap.get(methodArgumentName))
-            newXmlExecution.getArgument().add(xMLTrace)
+            xmlMethodNode.getArgumentTraceList().getTrace().add(xMLTrace)
         }
-        xmlExecution.getEvent().add(newXmlExecution)
-        xmlExecution = newXmlExecution
+        astNode.getAstNodeList().getAstNode().add(xmlMethodNode)
+        astNode = xmlMethodNode
     }
 
-    void executionClose(Boolean iFailed = false) {
-        XMLExecutionTrailer xmlExecutionTrailer = new XMLExecutionTrailer()
-        xmlExecutionTrailer.setEndDateTime(getXMLGregorianCalendar())
-        if (xmlExecution.isFailed == true || iFailed) {
-            xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.UNHANDLED_EXCEPTION)
-        } else {
-            xmlExecutionTrailer.setExecutionStatus(XMLExecutionStatus.NORMAL)
-        }
-        xmlExecutionTrailer.setElapsedTime(xmlExecutionTrailer.getEndDateTime().toGregorianCalendar().getTimeInMillis() - xmlExecution.getStartDateTime().toGregorianCalendar().getTimeInMillis() as BigInteger)
-        xmlExecution.setExecutionTrailer(xmlExecutionTrailer)
-        if (xmlExecution.parentExecution == null) {
-            XMLLog xmlLog = getXmlExecution() as XMLLog
-            XMLLogTrailer xmlLogTrailer = new XMLLogTrailer()
-            xmlLogTrailer.setNextLogName(xmlLog.getCurrentLogName())
-            xmlLogTrailer.setLogStatus(XMLLogStatus.STOPPED)
-            xmlLog.setLogTrailer(xmlLogTrailer)
-            xmlLogTrailer.setDateTime(getXMLGregorianCalendar())
-            JAXBContext lJAXBContext = JAXBContext.newInstance(XMLLog.class)
+    void executionClose() {
+        if (astNode.parentAstNode == null) {
+            JAXBContext lJAXBContext = JAXBContext.newInstance(astNode.getClass())
             Marshaller marshaller = lJAXBContext.createMarshaller()
             marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE)
             StringWriter stringWriter = new StringWriter()
-            marshaller.marshal(new ObjectFactory().createLog(xmlLog), stringWriter)
+            marshaller.marshal(new ObjectFactory().createRootAstNode(astNode), stringWriter)
             String xmlString = stringWriter.toString()
             log.debug(xmlString)
         }
-        xmlExecution = xmlExecution.parentExecution
+        astNode = astNode.parentAstNode
     }
 
     void handleControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
@@ -206,68 +181,43 @@ class BlackBoxEngine {
         executionClose()
         switch (iStatementName) {
             case "ReturnStatement":
-                while (!(xmlExecution instanceof XMLMethodExecution || (xmlExecution instanceof XMLExpressionEvaluation && xmlExecution.getExpressionName() == "ClosureExpression"))) {
+                while (!(astNode instanceof XMLMethodNode || (astNode instanceof XMLExpression && astNode.getExpressionName() == "ClosureExpression"))) {
                     executionClose()
                 }
                 break
             case "BreakStatement":
-                while (!(xmlExecution instanceof XMLStatementExecution && ["DoWhileStatement", "ForStatement", "WhileStatement", "SwitchStatement"].contains(xmlExecution.getStatementName()))) {
+                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement", "SwitchStatement"].contains(astNode.getStatementName()))) {
                     executionClose()
                 }
                 break
             case "ContinueStatement":
-                while (!(xmlExecution instanceof XMLStatementExecution && ["DoWhileStatement", "ForStatement", "WhileStatement"].contains(xmlExecution.getStatementName()))) {
+                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement"].contains(astNode.getStatementName()))) {
                     executionClose()
                 }
                 break
         }
     }
 
-    void logOpen() {
-        XMLLog xmlLog = new XMLLog()
-        xmlExecution = xmlLog
-        xmlLog.setCurrentLogName(Thread.currentThread().getName())
-        xmlLog.setPreviousLogName(xmlLog.getCurrentLogName())
-        xmlLog.setProcessId(ManagementFactory.getRuntimeMXBean().getName())
-        xmlLog.setProgramName("INFINITE-LOGGING-PROTOTYPE-GROOVY")
-        xmlLog.setProgramVersion("2.0.0.PRE")
-        xmlLog.setThreadId(Thread.currentThread().getId() as BigInteger)
-        xmlLog.setThreadName(Thread.currentThread().getName())
-        xmlLog.setStartDateTime(getXMLGregorianCalendar())
+    void initRootAstNode() {
+        astNode = new XMLASTNode()
+        astNode.setAstNodeList(new XMLASTNodeList())
+        astNode.setStartDateTime(getXMLGregorianCalendar())
     }
 
-    Object result(String iResultVariableName, Object iResult) {
+    Object methodResult(String iResultVariableName, Object iResult) {
         XMLTrace xMLTraceResult = TraceSerializer.createXMLTraceTrace(iResultVariableName, iResult)
-        xmlExecution.setResult(xMLTraceResult)
+        astNode.setMethodResult(xMLTraceResult)
         return iResult
     }
 
     void exception(Throwable throwable) {
         XMLException xmlException = new XMLException()
         xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
-        xmlException.setMessage(ExceptionUtils.getMessage(throwable))
-        xmlException.setExceptionClassName(throwable.getClass().getCanonicalName())
-        xmlException.setDateTime(getXMLGregorianCalendar())
-        while (!(xmlExecution instanceof XMLMethodExecution)) {
-            error(xmlException.getMessage())
-            executionClose(true)
+        xmlException.setExceptionDateTime(getXMLGregorianCalendar())
+        while (!(astNode instanceof XMLMethodNode)) {
+            executionClose()
         }
-        ((XMLMethodExecution)xmlExecution).setException(xmlException)
-        xmlExecution.isFailed = true
-    }
-
-    void error(String iMessage) {
-        XMLError xmlError = new XMLError()
-        xmlError.setMessage(iMessage)
-        xmlError.setDateTime(getXMLGregorianCalendar())
-        xmlExecution.getEvent().add(xmlError)
-    }
-
-    void stdout(String iMessage) {
-        XMLStdout xmlStdout = new XMLStdout()
-        xmlStdout.setMessage(iMessage)
-        xmlStdout.setDateTime(getXMLGregorianCalendar())
-        xmlExecution.getEvent().add(xmlStdout)
+        ((XMLMethodNode)astNode).setException(xmlException)
     }
 
 }
