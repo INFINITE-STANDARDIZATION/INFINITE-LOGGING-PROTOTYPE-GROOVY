@@ -441,7 +441,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitTupleExpression(TupleExpression iTupleExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitTupleExpression", ["iTupleExpression": iTupleExpression])
         try {
-            decorateExpressionList(iTupleExpression.getExpressions(), "iTupleExpression.getExpressions()")
+            transformExpressionList(iTupleExpression.getExpressions(), "iTupleExpression.getExpressions()")
             blackBoxEngine.methodResult("iTupleExpression", iTupleExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -455,7 +455,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitListExpression(ListExpression iListExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitListExpression", ["iListExpression": iListExpression])
         try {
-            decorateExpressionList(iListExpression.getExpressions(), "iListExpression.getExpressions()")
+            transformExpressionList(iListExpression.getExpressions(), "iListExpression.getExpressions()")
             blackBoxEngine.methodResult("iListExpression", iListExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -469,8 +469,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitArrayExpression(ArrayExpression iArrayExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitArrayExpression", ["iArrayExpression": iArrayExpression])
         try {
-            decorateExpressionList(iArrayExpression.getExpressions(), "iArrayExpression.getExpressions()")
-            decorateExpressionList(iArrayExpression.getSizeExpression(), "iArrayExpression.getSizeExpression()")
+            transformExpressionList(iArrayExpression.getExpressions(), "iArrayExpression.getExpressions()")
+            transformExpressionList(iArrayExpression.getSizeExpression(), "iArrayExpression.getSizeExpression()")
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -498,8 +498,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     }
 
     //todo: log return for all blackbox levels
-    void decorateExpressionList(List<Expression> expressionList, String iNodeSourceName) {
-        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "decorateExpressionList", ["expressionList": expressionList])
+    void transformExpressionList(List<Expression> expressionList, String iNodeSourceName) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "transformExpressionList", ["expressionList": expressionList])
         try {
             List<Expression> decoratedExpressionsList = expressionList.getClass().newInstance() as List<Expression>
             for (Expression expression : expressionList) {
@@ -545,102 +545,112 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         }
     }
 
-    /*
-       @Override
-       void visitRangeExpression(RangeExpression iRangeExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitRangeExpression", ["iRangeExpression": iRangeExpression])
-           try {
-               blackBoxEngine.methodResult("iRangeExpression", iRangeExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
+    @Override
+    void visitRangeExpression(RangeExpression iRangeExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitRangeExpression", ["iRangeExpression": iRangeExpression])
+        try {
+            super.visitRangeExpression(iRangeExpression) //todo: improve (from and to expressions are final)
+            blackBoxEngine.methodResult("iRangeExpression", iRangeExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
 
-       @Override
-       void visitSpreadExpression(SpreadExpression iSpreadExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadExpression", ["iSpreadExpression": iSpreadExpression])
-           try {
-               blackBoxEngine.methodResult("iSpreadExpression", iSpreadExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
+    @Override
+    void visitSpreadExpression(SpreadExpression iSpreadExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadExpression", ["iSpreadExpression": iSpreadExpression])
+        try {
+            super.visitSpreadExpression(iSpreadExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iSpreadExpression", iSpreadExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
 
-       @Override
-       void visitSpreadMapExpression(SpreadMapExpression iSpreadMapExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadMapExpression", ["iSpreadMapExpression": iSpreadMapExpression])
-           try {
-               blackBoxEngine.methodResult("iSpreadMapExpression", iSpreadMapExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
 
-       @Override
-       void visitMethodPointerExpression(MethodPointerExpression iMethodPointerExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMethodPointerExpression", ["iMethodPointerExpression": iMethodPointerExpression])
-           try {
-               blackBoxEngine.methodResult("iMethodPointerExpression", iMethodPointerExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
+    @Override
+    void visitSpreadMapExpression(SpreadMapExpression iSpreadMapExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitSpreadMapExpression", ["iSpreadMapExpression": iSpreadMapExpression])
+        try {
+            super.visitSpreadMapExpression(iSpreadMapExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iSpreadMapExpression", iSpreadMapExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
 
-       @Override
-       void visitUnaryMinusExpression(UnaryMinusExpression iUnaryMinusExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryMinusExpression", ["iUnaryMinusExpression": iUnaryMinusExpression])
-           try {
-               blackBoxEngine.methodResult("iUnaryMinusExpression", iUnaryMinusExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
 
-       @Override
-       void visitUnaryPlusExpression(UnaryPlusExpression iUnaryPlusExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryPlusExpression", ["iUnaryPlusExpression": iUnaryPlusExpression])
-           try {
-               blackBoxEngine.methodResult("iUnaryPlusExpression", iUnaryPlusExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
+    @Override
+    void visitMethodPointerExpression(MethodPointerExpression iMethodPointerExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMethodPointerExpression", ["iMethodPointerExpression": iMethodPointerExpression])
+        try {
+            super.visitMethodPointerExpression(iMethodPointerExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iMethodPointerExpression", iMethodPointerExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
 
-       @Override
-       void visitBitwiseNegationExpression(BitwiseNegationExpression iBitwiseNegationExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBitwiseNegationExpression", ["iBitwiseNegationExpression": iBitwiseNegationExpression])
-           try {
-               blackBoxEngine.methodResult("iBitwiseNegationExpression", iBitwiseNegationExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
+    @Override
+    void visitUnaryMinusExpression(UnaryMinusExpression iUnaryMinusExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryMinusExpression", ["iUnaryMinusExpression": iUnaryMinusExpression])
+        try {
+            super.visitUnaryMinusExpression(iUnaryMinusExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iUnaryMinusExpression", iUnaryMinusExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
+
+    @Override
+    void visitUnaryPlusExpression(UnaryPlusExpression iUnaryPlusExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitUnaryPlusExpression", ["iUnaryPlusExpression": iUnaryPlusExpression])
+        try {
+            super.visitUnaryPlusExpression(iUnaryPlusExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iUnaryPlusExpression", iUnaryPlusExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
+
+    @Override
+    void visitBitwiseNegationExpression(BitwiseNegationExpression iBitwiseNegationExpression) {
+        blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBitwiseNegationExpression", ["iBitwiseNegationExpression": iBitwiseNegationExpression])
+        try {
+            super.visitBitwiseNegationExpression(iBitwiseNegationExpression) //todo: improve (child expressions are final)
+            blackBoxEngine.methodResult("iBitwiseNegationExpression", iBitwiseNegationExpression)
+        } catch (Throwable throwable) {
+            blackBoxEngine.exception(throwable)
+            throw throwable
+        } finally {
+            blackBoxEngine.executionClose()
+        }
+    }
 
        @Override
        void visitCastExpression(CastExpression iCastExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitCastExpression", ["iCastExpression": iCastExpression])
            try {
+               super.visitCastExpression(iCastExpression) //todo: improve (child expressions are final)
                blackBoxEngine.methodResult("iCastExpression", iCastExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -654,6 +664,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitConstantExpression(ConstantExpression iConstantExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitConstantExpression", ["iConstantExpression": iConstantExpression])
            try {
+               super.visitConstantExpression(iConstantExpression)
                blackBoxEngine.methodResult("iConstantExpression", iConstantExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -667,6 +678,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitClassExpression(ClassExpression iClassExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitClassExpression", ["iClassExpression": iClassExpression])
            try {
+               super.visitClassExpression(iClassExpression)
                blackBoxEngine.methodResult("iClassExpression", iClassExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -680,6 +692,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitVariableExpression(VariableExpression iVariableExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitVariableExpression", ["iVariableExpression": iVariableExpression])
            try {
+               super.visitVariableExpression(iVariableExpression)
                blackBoxEngine.methodResult("iVariableExpression", iVariableExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -693,6 +706,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitDeclarationExpression(DeclarationExpression iDeclarationExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitDeclarationExpression", ["iDeclarationExpression": iDeclarationExpression])
            try {
+               //todo: enhance left expression logging
+               iDeclarationExpression.setRightExpression(blackBoxTransformation.transformExpression(iDeclarationExpression.getRightExpression(), blackBoxLevel, "iDeclarationExpression.getRightExpression()"))
                blackBoxEngine.methodResult("iDeclarationExpression", iDeclarationExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -706,6 +721,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitPropertyExpression(PropertyExpression iPropertyExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitPropertyExpression", ["iPropertyExpression": iPropertyExpression])
            try {
+               iPropertyExpression.setObjectExpression(blackBoxTransformation.transformExpression(iPropertyExpression.getObjectExpression(), blackBoxLevel, "iPropertyExpression.getObjectExpression()"))
+               iPropertyExpression.getProperty().visit(this)
                blackBoxEngine.methodResult("iPropertyExpression", iPropertyExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -719,6 +736,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitAttributeExpression(AttributeExpression iAttributeExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitAttributeExpression", ["iAttributeExpression": iAttributeExpression])
            try {
+               iAttributeExpression.setObjectExpression(blackBoxTransformation.transformExpression(iAttributeExpression.getObjectExpression(), blackBoxLevel, "iAttributeExpression.getObjectExpression()"))
+               iAttributeExpression.getProperty().visit(this)
                blackBoxEngine.methodResult("iAttributeExpression", iAttributeExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -732,6 +751,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitFieldExpression(FieldExpression iFieldExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitFieldExpression", ["iFieldExpression": iFieldExpression])
            try {
+               super.visitFieldExpression(iFieldExpression)
                blackBoxEngine.methodResult("iFieldExpression", iFieldExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -745,6 +765,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitGStringExpression(GStringExpression iGStringExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitGStringExpression", ["iGStringExpression": iGStringExpression])
            try {
+               transformExpressionList(iGStringExpression.getStrings(), "iGStringExpression.getStrings()")
+               transformExpressionList(iGStringExpression.getValues(), "iGStringExpression.getValues()")
                blackBoxEngine.methodResult("iGStringExpression", iGStringExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -758,6 +780,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        protected void visitListOfExpressions(List<? extends Expression> iExpressionList) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitListOfExpressions", ["iExpressionList": iExpressionList])
            try {
+               transformExpressionList(iExpressionList, "iExpressionList")
                blackBoxEngine.methodResult("iExpressionList", iExpressionList)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -771,6 +794,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitCatchStatement(CatchStatement iCatchStatement) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitCatchStatement", ["iCatchStatement": iCatchStatement])
            try {
+               iCatchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iCatchStatement.getCode(), blackBoxLevel, "iCatchStatement.getCode()")))
                blackBoxEngine.methodResult("iCatchStatement", iCatchStatement)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -784,6 +808,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitArgumentlistExpression(ArgumentListExpression iArgumentListExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitArgumentlistExpression", ["iArgumentListExpression": iArgumentListExpression])
            try {
+               transformExpressionList(iArgumentListExpression.getExpressions(), "iArgumentListExpression.getExpressions()")
                blackBoxEngine.methodResult("iArgumentListExpression", iArgumentListExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -797,6 +822,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitClosureListExpression(ClosureListExpression iClosureListExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitClosureListExpression", ["iClosureListExpression": iClosureListExpression])
            try {
+               transformExpressionList(iClosureListExpression.getExpressions(), "iClosureListExpression.getExpressions()")
                blackBoxEngine.methodResult("iClosureListExpression", iClosureListExpression)
            } catch (Throwable throwable) {
                blackBoxEngine.exception(throwable)
@@ -806,18 +832,4 @@ class BlackBoxVisitor extends CodeVisitorSupport {
            }
        }
 
-       @Override
-       void visitBytecodeExpression(BytecodeExpression iBytecodeExpression) {
-           blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBytecodeExpression", ["iBytecodeExpression": iBytecodeExpression])
-           try {
-               blackBoxEngine.methodResult("iBytecodeExpression", iBytecodeExpression)
-           } catch (Throwable throwable) {
-               blackBoxEngine.exception(throwable)
-               throw throwable
-           } finally {
-               blackBoxEngine.executionClose()
-           }
-       }
-
-       */
 }

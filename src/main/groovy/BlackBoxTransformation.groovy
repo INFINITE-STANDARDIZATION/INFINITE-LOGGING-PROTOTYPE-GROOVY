@@ -3,32 +3,10 @@ package groovy
 import groovy.inspect.swingui.AstNodeToScriptVisitor
 import groovy.transform.ToString
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.codehaus.groovy.ast.ASTNode
-import org.codehaus.groovy.ast.AnnotationNode
-import org.codehaus.groovy.ast.ClassHelper
-import org.codehaus.groovy.ast.ClassNode
-import org.codehaus.groovy.ast.MethodNode
-import org.codehaus.groovy.ast.Parameter
-import org.codehaus.groovy.ast.VariableScope
+import org.codehaus.groovy.ast.*
 import org.codehaus.groovy.ast.builder.AstBuilder
-import org.codehaus.groovy.ast.expr.ArgumentListExpression
-import org.codehaus.groovy.ast.expr.ClosureExpression
-import org.codehaus.groovy.ast.expr.ConstantExpression
-import org.codehaus.groovy.ast.expr.ConstructorCallExpression
-import org.codehaus.groovy.ast.expr.DeclarationExpression
-import org.codehaus.groovy.ast.expr.EmptyExpression
-import org.codehaus.groovy.ast.expr.Expression
-import org.codehaus.groovy.ast.expr.MethodCallExpression
-import org.codehaus.groovy.ast.expr.PropertyExpression
-import org.codehaus.groovy.ast.stmt.BlockStatement
-import org.codehaus.groovy.ast.stmt.BreakStatement
-import org.codehaus.groovy.ast.stmt.ContinueStatement
-import org.codehaus.groovy.ast.stmt.EmptyStatement
-import org.codehaus.groovy.ast.stmt.ExpressionStatement
-import org.codehaus.groovy.ast.stmt.ReturnStatement
-import org.codehaus.groovy.ast.stmt.Statement
-import org.codehaus.groovy.ast.stmt.ThrowStatement
-import org.codehaus.groovy.ast.stmt.TryCatchStatement
+import org.codehaus.groovy.ast.expr.*
+import org.codehaus.groovy.ast.stmt.*
 import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
@@ -42,8 +20,8 @@ import org.codehaus.groovy.transform.GroovyASTTransformation
 )
 class BlackBoxTransformation extends AbstractASTTransformation {
 
-    final String PCLASSSIMPLENAME= this.getClass().getSimpleName()
-    final String PPACKAGENAME= this.getClass().getPackage().getName()
+    final String PCLASSSIMPLENAME = this.getClass().getSimpleName()
+    final String PPACKAGENAME = this.getClass().getPackage().getName()
     final BlackBoxEngine blackBoxEngine = BlackBoxEngine.getInstance()
     BlackBoxVisitor blackBoxVisitor
 
@@ -60,7 +38,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             String methodName = methodNode.getName()
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
             Thread.currentThread().setName("Compilation_$className.$methodName")
-            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className":className, "methodName":methodName, "methodNode.getCode()": methodNode.getCode()])
+            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className": className, "methodName": methodName, "methodNode.getCode()": methodNode.getCode()])
             AnnotationNode annotationNode = iAstNodeArray[0] as AnnotationNode
             BlackBoxLevel blackBoxLevel = getBlackBoxLevel(annotationNode)
             blackBoxVisitor = new BlackBoxVisitor(blackBoxLevel, annotationNode, this)
@@ -68,7 +46,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             decoratedMethodNodeBlockStatement.setSourcePosition(methodNode.getCode())
             decoratedMethodNodeBlockStatement.copyNodeMetaData(methodNode.getCode())
             decoratedMethodNodeBlockStatement.addStatement(createLoggerDeclaration())
-            decoratedMethodNodeBlockStatement.addStatement(decorateMethod(methodNode, blackBoxLevel, annotationNode))
+            decoratedMethodNodeBlockStatement.addStatement(transformMethod(methodNode, blackBoxLevel, annotationNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
             new VariableScopeVisitor(sourceUnit, true).visitClass(methodNode.getDeclaringClass())//<<<<<<<<<
             blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getCode())
@@ -94,7 +72,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             if (iExpression == null || iExpression instanceof EmptyExpression) {
                 return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
             }
-            if (!(iExpression instanceof DeclarationExpression)) {//TODO: find a way to log Declaration Expression evaluation.
+            if (!(iExpression instanceof DeclarationExpression)) {
                 if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
                     iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
@@ -136,38 +114,41 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     Expression transformExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iNodeSourceName) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
         try {
-            if (iExpression == null || iExpression instanceof EmptyExpression) {
-                return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-            }
-            if (!(iExpression instanceof DeclarationExpression)) {//TODO: find a way to log Declaration Expression evaluation.
-                if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+            //See also: https://issues.apache.org/jira/projects/GROOVY/issues/GROOVY-8834
+            switch (iExpression) {
+                case null || EmptyExpression:
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                }
-                String iOrigExpressionCode = codeString(iExpression)
-                ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
-                closureExpression.setVariableScope(new VariableScope())
-                MethodCallExpression methodCallExpression = GeneralUtils.callX(
-                        GeneralUtils.varX("automaticBlackBox"),
-                        "expressionEvaluation",
-                        GeneralUtils.args(
-                                GeneralUtils.constX(iExpression.getClass().getSimpleName()),
-                                GeneralUtils.constX(iOrigExpressionCode),
-                                GeneralUtils.constX(iExpression.getColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLastColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLineNumber()),
-                                GeneralUtils.constX(iExpression.getLastLineNumber()),
-                                closureExpression,
-                                GeneralUtils.constX(iNodeSourceName)
-                        )
-                )
-                methodCallExpression.copyNodeMetaData(iExpression)
-                methodCallExpression.setSourcePosition(iExpression)
-                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
-                return blackBoxEngine.methodResult("methodCallExpression", methodCallExpression) as Expression
-            } else {
-                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
-                return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case DeclarationExpression:
+                    Expression transformedRightExpression = GeneralUtils.castX(ClassHelper.make(Object.class), transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression"))
+                    DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    //transformedDeclarationExpression.leftExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                    return blackBoxEngine.methodResult("transformedDeclarationExpression", transformedDeclarationExpression) as Expression
+                default:
+                    if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
+                        iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                        return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                    }
+                    String iOrigExpressionCode = codeString(iExpression)
+                    ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
+                    closureExpression.setVariableScope(new VariableScope())
+                    MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                            GeneralUtils.varX("automaticBlackBox"),
+                            "expressionEvaluation",
+                            GeneralUtils.args(
+                                    GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                                    GeneralUtils.constX(iOrigExpressionCode),
+                                    GeneralUtils.constX(iExpression.getColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLineNumber()),
+                                    GeneralUtils.constX(iExpression.getLastLineNumber()),
+                                    closureExpression,
+                                    GeneralUtils.constX(iNodeSourceName)
+                            )
+                    )
+                    methodCallExpression.copyNodeMetaData(iExpression)
+                    methodCallExpression.setSourcePosition(iExpression)
+                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                    return blackBoxEngine.methodResult("methodCallExpression", methodCallExpression) as Expression
             }
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -234,8 +215,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
-    Statement decorateMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "decorateMethod", ["iMethodNode.getCode()": iMethodNode.getCode(), "iBlackBoxLevel": iBlackBoxLevel])
+    Statement transformMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
+        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformMethod", ["iMethodNode.getCode()": iMethodNode.getCode(), "iBlackBoxLevel": iBlackBoxLevel])
         try {
             Parameter[] methodParameters = iMethodNode.getParameters()
             BlockStatement decoratedBlockStatement = new BlockStatement()
@@ -308,7 +289,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         iAnnotationNode.setSourcePosition(iAnnotationNode)
         return throwStatement
     }
-    
+
     Statement text2statement(String iCodeText, Parameter[] iParameters) {
         blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "text2statement", ["iCodeText": iCodeText, "iParameters": iParameters])
         try {
@@ -331,7 +312,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             blackBoxEngine.executionClose()
         }
     }
-    
+
     static String codeString(ASTNode iAstNode) {
         StringWriter stringWriter = new StringWriter()
         iAstNode.visit(new AstNodeToScriptVisitor(stringWriter))

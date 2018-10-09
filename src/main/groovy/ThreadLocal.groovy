@@ -2,7 +2,7 @@ package groovy
 
 import java.util.concurrent.ConcurrentHashMap
 
-/*Apache tomcat interferes with normal Thread locals.*/
+/*Application servers interfere with normal Thread Locals*/
 
 class ThreadLocal {
 
