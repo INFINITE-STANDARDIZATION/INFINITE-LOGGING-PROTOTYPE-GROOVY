@@ -116,18 +116,25 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         try {
             //See also: https://issues.apache.org/jira/projects/GROOVY/issues/GROOVY-8834
             switch (iExpression) {
-                case null || EmptyExpression:
+                case null:
+                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case EmptyExpression:
+                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value():
+                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case MapEntryExpression:
+                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case DeclarationExpression:
-                    Expression transformedRightExpression = GeneralUtils.castX(ClassHelper.make(Object.class), transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression"))
+                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression")
                     DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
-                    //transformedDeclarationExpression.leftExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                     return blackBoxEngine.methodResult("transformedDeclarationExpression", transformedDeclarationExpression) as Expression
+                case BinaryExpression:
+                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression")
+                    BinaryExpression transformedBinaryExpression = new BinaryExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    return blackBoxEngine.methodResult("transformedBinaryExpression", transformedBinaryExpression) as Expression
                 default:
-                    if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
-                        iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
-                        return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                    }
                     String iOrigExpressionCode = codeString(iExpression)
                     ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
                     closureExpression.setVariableScope(new VariableScope())
@@ -291,26 +298,18 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     }
 
     Statement text2statement(String iCodeText, Parameter[] iParameters) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "text2statement", ["iCodeText": iCodeText, "iParameters": iParameters])
-        try {
-            String statementCode
-            if (methodArgumentsPresent(iParameters)) {
-                ArrayList<String> serializedParameters = new ArrayList<String>()
-                for (parameter in iParameters) {
-                    serializedParameters.add(""""${parameter.getName()}": ${parameter.getName()}""")
-                }
-                statementCode = String.format(iCodeText, """, [${serializedParameters.join(",")}]""")
-            } else {
-                statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
+        String statementCode
+        if (methodArgumentsPresent(iParameters)) {
+            ArrayList<String> serializedParameters = new ArrayList<String>()
+            for (parameter in iParameters) {
+                serializedParameters.add(""""${parameter.getName()}": ${parameter.getName()}""")
             }
-            List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, statementCode)
-            return blackBoxEngine.methodResult("resultingStatements.first()", resultingStatements.first()) as Statement
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
+            statementCode = String.format(iCodeText, """, [${serializedParameters.join(",")}]""")
+        } else {
+            statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
         }
+        List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, statementCode)
+        return blackBoxEngine.methodResult("resultingStatements.first()", resultingStatements.first()) as Statement
     }
 
     static String codeString(ASTNode iAstNode) {

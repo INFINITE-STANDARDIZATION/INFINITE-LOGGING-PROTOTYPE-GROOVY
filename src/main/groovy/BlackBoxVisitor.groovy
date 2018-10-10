@@ -20,7 +20,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     BlackBoxTransformation blackBoxTransformation
 
     /*
-    NOTE: TO SKIP LOGGING SPECIFIC STATEMENT/EXPRESSION - IT SHOULD BE EXCLUDED IN TRANSFORMER METHOD
+    NOTE: TO SKIP LOGGING SPECIFIC STATEMENT/EXPRESSION - IT SHOULD BE EXCLUDED IN TRANSFORM METHOD
     (BlackBoxTransformation.transform...), AND NOT IN VISIT METHOD.
      */
 
@@ -501,13 +501,13 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void transformExpressionList(List<Expression> expressionList, String iNodeSourceName) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "transformExpressionList", ["expressionList": expressionList])
         try {
-            List<Expression> decoratedExpressionsList = expressionList.getClass().newInstance() as List<Expression>
+            List<Expression> transformedExpressionList = expressionList.getClass().newInstance() as List<Expression>
             for (Expression expression : expressionList) {
-                decoratedExpressionsList.addAll(blackBoxTransformation.transformExpression(expression, blackBoxLevel, iNodeSourceName))
+                transformedExpressionList.addAll(blackBoxTransformation.transformExpression(expression, blackBoxLevel, iNodeSourceName))
             }
             expressionList.clear()
-            expressionList.addAll(decoratedExpressionsList)
-            blackBoxEngine.methodResult("decoratedExpressionsList", decoratedExpressionsList)
+            expressionList.addAll(transformedExpressionList)
+            blackBoxEngine.methodResult("transformedExpressionList", transformedExpressionList)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
             throw throwable
@@ -520,7 +520,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitMapExpression(MapExpression iMapExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMapExpression", ["iMapExpression": iMapExpression])
         try {
-            super.visitMapExpression(iMapExpression) //todo: improve
+            super.visitMapExpression(iMapExpression)//todo: not sure how to improve this (log MapEntryExpression)
             blackBoxEngine.methodResult("iMapExpression", iMapExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

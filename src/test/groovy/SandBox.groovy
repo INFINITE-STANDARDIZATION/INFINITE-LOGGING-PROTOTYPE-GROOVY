@@ -1,6 +1,8 @@
 package groovy
 
-import org.codehaus.groovy.ast.expr.*
+import groovy.inspect.swingui.AstNodeToScriptVisitor
+import org.codehaus.groovy.ast.expr.EmptyExpression
+import org.codehaus.groovy.ast.tools.GeneralUtils
 
 class SandBox {
 
@@ -8,9 +10,8 @@ class SandBox {
         new SandBox().someMethod()
     }
 
-    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    //@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
     void someMethod() {
-        int z = 1
     }
 
 }
