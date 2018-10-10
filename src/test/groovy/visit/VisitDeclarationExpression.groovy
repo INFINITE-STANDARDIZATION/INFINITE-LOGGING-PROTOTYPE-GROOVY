@@ -23,7 +23,7 @@ void visitDeclarationExpressionStatementLevel() {
     def z = 1
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitDeclarationExpressionExpressionLevel() {
     def z = 1
 }

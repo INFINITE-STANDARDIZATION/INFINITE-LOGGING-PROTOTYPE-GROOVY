@@ -116,6 +116,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         try {
             //See also: https://issues.apache.org/jira/projects/GROOVY/issues/GROOVY-8834
             switch (iExpression) {
+                //IN EACH CASE EITHER "iExpression.visit" OR "transform(iExpression.childExpression)" SHOULD BE CALLED OTHERWISE TRAVERSING WILL TERMINATE EARLY
                 case null:
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case EmptyExpression:
@@ -123,16 +124,51 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 case iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value():
                     iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case StaticMethodCallExpression:
+                    //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
+                    String iOrigExpressionCode = codeString(iExpression)
+                    ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(new StaticMethodCallExpression(
+                            iExpression.getOwnerType(),
+                            iExpression.getMethod(),
+                            transformExpression(iExpression.getArguments(), iBlackBoxLevel, "StaticMethodCallExpression:getArguments()")//<<<<<<<<<<<
+                    )))
+                    closureExpression.setVariableScope(new VariableScope())
+                    MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                            GeneralUtils.varX("automaticBlackBox"),
+                            "expressionEvaluation",
+                            GeneralUtils.args(
+                                    GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                                    GeneralUtils.constX(iOrigExpressionCode),
+                                    GeneralUtils.constX(iExpression.getColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLineNumber()),
+                                    GeneralUtils.constX(iExpression.getLastLineNumber()),
+                                    closureExpression,
+                                    GeneralUtils.constX(iNodeSourceName)
+                            )
+                    )
+                    methodCallExpression.copyNodeMetaData(iExpression)
+                    methodCallExpression.setSourcePosition(iExpression)
+                    return blackBoxEngine.methodResult("methodCallExpression", methodCallExpression) as Expression
+                case ArgumentListExpression:
+                    blackBoxVisitor.transformExpressionList(iExpression.getExpressions(), "ArgumentListExpression:getExpressions()")
+                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case MapEntryExpression:
                     iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case DeclarationExpression:
-                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression")
+                    //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
+                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "DeclarationExpression:rightExpression")
                     DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    transformedDeclarationExpression.copyNodeMetaData(iExpression)
+                    transformedDeclarationExpression.setSourcePosition(iExpression)
                     return blackBoxEngine.methodResult("transformedDeclarationExpression", transformedDeclarationExpression) as Expression
                 case BinaryExpression:
-                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "iExpression.rightExpression")
+                    //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
+                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "BinaryExpression:rightExpression")
                     BinaryExpression transformedBinaryExpression = new BinaryExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    transformedBinaryExpression.copyNodeMetaData(iExpression)
+                    transformedBinaryExpression.setSourcePosition(iExpression)
                     return blackBoxEngine.methodResult("transformedBinaryExpression", transformedBinaryExpression) as Expression
                 default:
                     String iOrigExpressionCode = codeString(iExpression)

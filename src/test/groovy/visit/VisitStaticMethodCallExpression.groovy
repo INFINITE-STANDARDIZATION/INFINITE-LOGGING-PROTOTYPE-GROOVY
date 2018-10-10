@@ -3,27 +3,31 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
+static String tst(String z, String q, String w) {
+    return z+q+w
+}
+
 //@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitStaticMethodCallExpressionNoneLevel() {
-    System.getProperty("test")
+    tst("1","2","3")
 }
 
 //@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitStaticMethodCallExpressionMethodErrorLevel() {
-    System.getProperty("test")
+    tst("1","2","3")
 }
 
 //@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitStaticMethodCallExpressionMethodLevel() {
-    System.getProperty("test")
+    tst("1","2","3")
 }
 
 //@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitStaticMethodCallExpressionStatementLevel() {
-    System.getProperty("test")
+    tst("1","2","3")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitStaticMethodCallExpressionExpressionLevel() {
-    System.getProperty("test")
+    tst("1","2","3")
 }

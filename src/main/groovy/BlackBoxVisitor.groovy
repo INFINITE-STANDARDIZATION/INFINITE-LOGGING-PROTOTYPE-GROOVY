@@ -275,15 +275,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitMethodCallExpression", ["iMethodCallExpression": iMethodCallExpression])
         try {
             iMethodCallExpression.setObjectExpression(blackBoxTransformation.transformExpression(iMethodCallExpression.getObjectExpression(), blackBoxLevel, "iMethodCallExpression.getObjectExpression()"))
-            //iMethodCallExpression.setArguments(blackBoxTransformation.transformExpression(iMethodCallExpression.getArguments(), blackBoxLevel))
-            /*/\/\/\ todo: General error during class generation: Internal compiler error while compiling C:\Users\anton.pryamostanov\IdeaProjects\INFINITE-LOGGING-PROTOTYPE-GROOVY\src\test\groovy\Executable.groovy
-                Method: MethodNode@892737[groovy.Executable$_someMethod2_closure3$_closure21#java.lang.Object doCall(java.lang.Object)]
-                Line 21, expecting casting to java.lang.Object but operand stack is empty
-
-                java.lang.ArrayIndexOutOfBoundsException: Internal compiler error while compiling C:\Users\anton.pryamostanov\IdeaProjects\INFINITE-LOGGING-PROTOTYPE-GROOVY\src\test\groovy\Executable.groovy
-                Method: MethodNode@892737[groovy.Executable$_someMethod2_closure3$_closure21#java.lang.Object doCall(java.lang.Object)]
-                Line 21, expecting casting to java.lang.Object but operand stack is empty
-             */
+            iMethodCallExpression.setArguments(blackBoxTransformation.transformExpression(iMethodCallExpression.getArguments(), blackBoxLevel, "iMethodCallExpression.getArguments()"))
             blackBoxEngine.methodResult("iMethodCallExpression", iMethodCallExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
@@ -298,7 +290,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitStaticMethodCallExpression", ["iStaticMethodCallExpression": iStaticMethodCallExpression])
         try {
             super.visitStaticMethodCallExpression(iStaticMethodCallExpression)
-            //todo: improve Arguments handling (there is no setter method)
+            //todo: improve Arguments handling (there is no setter method) (https://issues.apache.org/jira/browse/GROOVY-8834)
             blackBoxEngine.methodResult("iStaticMethodCallExpression", iStaticMethodCallExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)
