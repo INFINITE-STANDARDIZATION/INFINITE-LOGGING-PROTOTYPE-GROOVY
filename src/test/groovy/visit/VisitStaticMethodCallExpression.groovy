@@ -30,4 +30,5 @@ void visitStaticMethodCallExpressionStatementLevel() {
 @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitStaticMethodCallExpressionExpressionLevel() {
     tst("1","2","3")
+    1/0
 }

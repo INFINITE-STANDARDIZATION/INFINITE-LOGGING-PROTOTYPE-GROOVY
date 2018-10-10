@@ -11,6 +11,7 @@ import org.codehaus.groovy.ast.tools.GeneralUtils
 import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
+import org.codehaus.groovy.syntax.Types
 import org.codehaus.groovy.transform.AbstractASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
 
@@ -166,15 +167,41 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 case BinaryExpression:
                     //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
                     Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "BinaryExpression:rightExpression")
-                    BinaryExpression transformedBinaryExpression = new BinaryExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    Expression transformedLeftExpression
+                    if (iExpression.operation == Types.ASSIGN) {
+                        transformedLeftExpression = iExpression.leftExpression
+                    } else {
+                        transformedLeftExpression = transformExpression(iExpression.leftExpression, iBlackBoxLevel, "BinaryExpression:leftExpression")
+                    }
+                    BinaryExpression transformedBinaryExpression = new BinaryExpression(transformedLeftExpression, iExpression.operation, transformedRightExpression)
                     transformedBinaryExpression.copyNodeMetaData(iExpression)
                     transformedBinaryExpression.setSourcePosition(iExpression)
-                    return blackBoxEngine.methodResult("transformedBinaryExpression", transformedBinaryExpression) as Expression
+                    String iOrigExpressionCode = codeString(iExpression)
+                    ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(transformedBinaryExpression))
+                    closureExpression.setVariableScope(new VariableScope())
+                    MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                            GeneralUtils.varX("automaticBlackBox"),
+                            "expressionEvaluation",
+                            GeneralUtils.args(
+                                    GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                                    GeneralUtils.constX(iOrigExpressionCode),
+                                    GeneralUtils.constX(iExpression.getColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLineNumber()),
+                                    GeneralUtils.constX(iExpression.getLastLineNumber()),
+                                    closureExpression,
+                                    GeneralUtils.constX(iNodeSourceName)
+                            )
+                    )
+                    methodCallExpression.copyNodeMetaData(iExpression)
+                    methodCallExpression.setSourcePosition(iExpression)
+                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<
+                    return blackBoxEngine.methodResult("methodCallExpression", methodCallExpression) as Expression
                 default:
                     String iOrigExpressionCode = codeString(iExpression)
                     ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
                     closureExpression.setVariableScope(new VariableScope())
-                    MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                    MethodCallExpression methodCallExpression = GeneralUtils.callX(//todo: extract this code into function "transformAnyExpressionIntoClosure"
                             GeneralUtils.varX("automaticBlackBox"),
                             "expressionEvaluation",
                             GeneralUtils.args(
