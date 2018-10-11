@@ -7,22 +7,22 @@ static String tst(String z, String q, String w) {
     return z+q+w
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitStaticMethodCallExpressionNoneLevel() {
     tst("1","2","3")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitStaticMethodCallExpressionMethodErrorLevel() {
     tst("1","2","3")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitStaticMethodCallExpressionMethodLevel() {
     tst("1","2","3")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitStaticMethodCallExpressionStatementLevel() {
     tst("1","2","3")
 }
@@ -30,5 +30,5 @@ void visitStaticMethodCallExpressionStatementLevel() {
 @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitStaticMethodCallExpressionExpressionLevel() {
     tst("1","2","3")
-    1/0
+//    1/0
 }

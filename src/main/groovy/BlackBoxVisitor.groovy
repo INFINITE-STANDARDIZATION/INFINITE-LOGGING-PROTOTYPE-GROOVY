@@ -757,7 +757,20 @@ class BlackBoxVisitor extends CodeVisitorSupport {
        void visitGStringExpression(GStringExpression iGStringExpression) {
            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitGStringExpression", ["iGStringExpression": iGStringExpression])
            try {
-               transformExpressionList(iGStringExpression.getStrings(), "iGStringExpression.getStrings()")
+               //transformExpressionList(iGStringExpression.getStrings(), "iGStringExpression.getStrings()")
+               /*TODO:
+               java.lang.ClassCastException: org.codehaus.groovy.ast.expr.MethodCallExpression cannot be cast to org.codehaus.groovy.ast.expr.ConstantExpression
+	at org.codehaus.groovy.classgen.ClassCompletionVerifier.visitGStringExpression(ClassCompletionVerifier.java:701)
+	at org.codehaus.groovy.ast.expr.GStringExpression.visit(GStringExpression.java:54)
+	at org.codehaus.groovy.ast.CodeVisitorSupport.visitReturnStatement(CodeVisitorSupport.java:126)
+	at org.codehaus.groovy.ast.ClassCodeVisitorSupport.visitReturnStatement(ClassCodeVisitorSupport.java:212)
+	at org.codehaus.groovy.ast.stmt.ReturnStatement.visit(ReturnStatement.java:49)
+	at org.codehaus.groovy.ast.CodeVisitorSupport.visitClosureExpression(CodeVisitorSupport.java:227)
+	at org.codehaus.groovy.ast.expr.ClosureExpression.visit(ClosureExpression.java:49)
+	at org.codehaus.groovy.ast.CodeVisitorSupport.visitListOfExpressions(CodeVisitorSupport.java:326)
+	at org.codehaus.groovy.ast.CodeVisitorSupport.visitTupleExpression(CodeVisitorSupport.java:231)
+	at org.codehaus.groovy.ast.CodeVisitorSupport.visitArgumentlistExpression(CodeVisitorSupport.java:336)
+                */
                transformExpressionList(iGStringExpression.getValues(), "iGStringExpression.getValues()")
                blackBoxEngine.methodResult("iGStringExpression", iGStringExpression)
            } catch (Throwable throwable) {

@@ -38,8 +38,6 @@ dependencies {
 
 }
 
-
-
 buildscript {
     repositories {
         mavenCentral()
@@ -51,16 +49,20 @@ buildscript {
 
     }
 }
+
 apply plugin: 'com.github.jacobono.jaxb'
+
 dependencies {
     jaxb 'com.sun.xml.bind:jaxb-xjc:2.2.7'
     jaxb "org.jvnet.jaxb2_commons:jaxb2-basics-ant:0.6.5"
     jaxb "org.jvnet.jaxb2_commons:jaxb2-basics:0.6.4"
     jaxb "org.jvnet.jaxb2_commons:jaxb2-basics-annotate:0.6.4"
 }
+
 configurations {
     jaxb
 }
+
 task jaxb(){
     description 'Converts xsds to classes'
     def jaxbTargetDir = file("generated")
@@ -74,6 +76,7 @@ task jaxb(){
         }
     }
 }
+
 sourceSets {
 
     main {
@@ -88,6 +91,7 @@ sourceSets {
         }
     }
 }
+
 tasks.withType(GroovyCompile) {
     configure(groovyOptions.forkOptions) {
         memoryMaximumSize = '1g'
