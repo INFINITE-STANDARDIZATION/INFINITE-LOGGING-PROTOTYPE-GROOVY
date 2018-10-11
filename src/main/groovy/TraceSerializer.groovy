@@ -12,7 +12,7 @@ import org.codehaus.groovy.ast.ClassNode
 
 class TraceSerializer {
 
-    static XMLTrace createXMLTraceTrace(String iTraceName, Object iTrace) {
+    static XMLTrace createXMLTraceTrace(Object iTrace, String iTraceName = null) {
         XMLTrace xMLTrace
         if (iTrace instanceof ClassNode) {
             xMLTrace = new XMLASTTrace()
@@ -36,8 +36,8 @@ class TraceSerializer {
             xMLTrace = new XMLMapTrace()
             xMLTrace.setSize(iTrace.size() as BigInteger)
             for (key in iTrace.keySet()) {
-                XMLTrace xMLTraceKey = createXMLTraceTrace("key", key)
-                XMLTrace xMLTraceValue = createXMLTraceTrace("value", iTrace.get(key))
+                XMLTrace xMLTraceKey = createXMLTraceTrace(key, "key")
+                XMLTrace xMLTraceValue = createXMLTraceTrace(iTrace.get(key), "value")
                 XMLMapEntry xmlMapEntry = new XMLMapEntry()
                 xmlMapEntry.setKey(xMLTraceKey)
                 xmlMapEntry.setValue(xMLTraceValue)
@@ -47,7 +47,7 @@ class TraceSerializer {
             xMLTrace = new XMLListTrace()
             xMLTrace.setSize(iTrace.size() as BigInteger)
             iTrace.eachWithIndex { Object listEntry, Integer index ->
-                XMLTrace xMLTraceValue = createXMLTraceTrace(index.toString(), listEntry)
+                XMLTrace xMLTraceValue = createXMLTraceTrace(listEntry, index.toString())
                 ((XMLListTrace)xMLTrace).getCollectionElement().add(xMLTraceValue)
             }
         } else {
@@ -58,7 +58,9 @@ class TraceSerializer {
                 xMLTrace.setSerializedRepresentation(iTrace.toString())
             }
         }
-        xMLTrace.setVariableName(iTraceName)
+        if (iTraceName != null) {
+            xMLTrace.setVariableName(iTraceName)
+        }
         xMLTrace.setClassName(iTrace.getClass().getCanonicalName())
         return xMLTrace
     }

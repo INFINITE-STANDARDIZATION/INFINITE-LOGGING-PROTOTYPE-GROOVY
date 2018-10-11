@@ -85,10 +85,10 @@ class BlackBoxEngine {
         Object expressionResult = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
         switch (astNodeForChecking) {
             case XMLMethodNode:
-                astNodeForChecking.setMethodResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, expressionResult))
+                astNodeForChecking.setMethodResult(TraceSerializer.createXMLTraceTrace(expressionResult, iReturnStatementCodeString))
                 break
             case XMLExpression:
-                astNodeForChecking.setExpressionResult(TraceSerializer.createXMLTraceTrace(iReturnStatementCodeString, expressionResult))
+                astNodeForChecking.setExpressionResult(TraceSerializer.createXMLTraceTrace(expressionResult, iReturnStatementCodeString))
                 break
         }
         return expressionResult
@@ -112,7 +112,7 @@ class BlackBoxEngine {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpression.setExpressionResult(TraceSerializer.createXMLTraceTrace(iRestoredScriptCode/*todo: parent*/, evaluationResult))
+                xmlExpression.setExpressionResult(TraceSerializer.createXMLTraceTrace(evaluationResult))
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -156,7 +156,7 @@ class BlackBoxEngine {
         xmlMethodNode.setLastLineNumber(iLastLineNumber as BigInteger)
         xmlMethodNode.setArgumentTraceList(new XMLTraceList())
         for (methodArgumentName in methodArgumentMap.keySet()) {
-            XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentName, methodArgumentMap.get(methodArgumentName))
+            XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentMap.get(methodArgumentName), methodArgumentName)
             xmlMethodNode.getArgumentTraceList().getTrace().add(xMLTrace)
         }
         astNode.getAstNodeList().getAstNode().add(xmlMethodNode)
@@ -205,7 +205,7 @@ class BlackBoxEngine {
     }
 
     Object methodResult(String iResultVariableName, Object iResult) {
-        XMLTrace xMLTraceResult = TraceSerializer.createXMLTraceTrace(iResultVariableName, iResult)
+        XMLTrace xMLTraceResult = TraceSerializer.createXMLTraceTrace(iResult, iResultVariableName)
         astNode.setMethodResult(xMLTraceResult)
         return iResult
     }

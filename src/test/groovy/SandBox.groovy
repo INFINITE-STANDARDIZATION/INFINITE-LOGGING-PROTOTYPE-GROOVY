@@ -7,14 +7,13 @@ import org.codehaus.groovy.ast.tools.GeneralUtils
 class SandBox {
 
     static void main(String[] args) {
-        new SandBox().someMethod()
+        Date q = new SandBox().someMethod(new Date())
     }
 
-    //@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
-    void someMethod() {
-        StringWriter stringWriter = new StringWriter()
-        GeneralUtils.declS(GeneralUtils.varX("someVariableName"), new EmptyExpression()).visit(new AstNodeToScriptVisitor(stringWriter))
-        System.out.println("Output: "+stringWriter.getBuffer().toString().replace("\$", ""))
+    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    Date someMethod(Date iDate) {
+        System.out.println(iDate)
+        return iDate
     }
 
 }
