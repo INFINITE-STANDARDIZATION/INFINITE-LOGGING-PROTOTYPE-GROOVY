@@ -319,8 +319,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBinaryExpression(BinaryExpression iBinaryExpression) {
         blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, "visitBinaryExpression", ["iBinaryExpression": iBinaryExpression])
         try {
-            //todo: enhance left expression logging
-            iBinaryExpression.setRightExpression(blackBoxTransformation.transformExpression(iBinaryExpression.getRightExpression(), blackBoxLevel, "iBinaryExpression.getRightExpression()"))
+            //unchanged; handled in transformExpression method directly
             blackBoxEngine.methodResult("iBinaryExpression", iBinaryExpression)
         } catch (Throwable throwable) {
             blackBoxEngine.exception(throwable)

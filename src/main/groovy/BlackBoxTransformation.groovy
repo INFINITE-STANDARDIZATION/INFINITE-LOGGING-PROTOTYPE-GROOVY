@@ -163,6 +163,11 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 case iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value():
                     iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
+                case BooleanExpression:
+                    Expression transformedChildExpression = transformExpression(iExpression.getExpression() as Expression, iBlackBoxLevel, "BooleanExpression:getExpression()")
+                    BooleanExpression transformedBooleanExpression = new BooleanExpression(transformedChildExpression)
+                    Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, transformedBooleanExpression, iSourceNodeName)
+                    return blackBoxEngine.methodResult("transformedExpression", transformedExpression) as Expression
                 case StaticMethodCallExpression:
                     StaticMethodCallExpression staticMethodCallExpression = new StaticMethodCallExpression(
                             iExpression.getOwnerType() as ClassNode,
@@ -184,16 +189,14 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 case BinaryExpression:
                     Expression transformedRightExpression = transformExpression(iExpression.rightExpression as Expression, iBlackBoxLevel, "BinaryExpression:rightExpression")
                     Expression transformedLeftExpression
-                    if (iExpression.operation == Types.ASSIGN) {//todo: this does not work
+                    if (iExpression.operation.text == "=") {
                         transformedLeftExpression = iExpression.leftExpression
+                        iExpression.leftExpression.visit(blackBoxVisitor)
                     } else {
                         transformedLeftExpression = transformExpression(iExpression.leftExpression as Expression, iBlackBoxLevel, "BinaryExpression:leftExpression")
                     }
                     BinaryExpression transformedBinaryExpression = new BinaryExpression(transformedLeftExpression as Expression, iExpression.operation as Token, transformedRightExpression)
-                    transformedBinaryExpression.copyNodeMetaData(iExpression)
-                    transformedBinaryExpression.setSourcePosition(iExpression)
                     Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, transformedBinaryExpression, iSourceNodeName)
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
                     return blackBoxEngine.methodResult("transformedExpression", transformedExpression) as Expression
                 default:
                     Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, iExpression, iSourceNodeName)
