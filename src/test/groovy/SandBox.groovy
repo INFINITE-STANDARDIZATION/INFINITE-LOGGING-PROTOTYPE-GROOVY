@@ -8,7 +8,8 @@ class SandBox {
 
     static void main(String[] args) {
         //Date q = new SandBox().someMethod(new Date())
-        new SandBox().visitClosureExpressionExpressionLevel()
+        //new SandBox().visitClosureExpressionExpressionLevel()
+        new SandBox().visitBinaryExpressionExpressionLevel()
     }
 
     //@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
@@ -26,8 +27,15 @@ class SandBox {
         c.call()
     }
 
-    void w() {
-
+    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    void visitBinaryExpressionExpressionLevel() {
+        Object object = new Object()
+        Object object2 = new Object()
+        object = object2
     }
-
+/*
+    @Override
+    void run() {
+        new SandBox().visitBinaryExpressionExpressionLevel()
+    }*/
 }
