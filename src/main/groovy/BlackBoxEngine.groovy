@@ -79,7 +79,7 @@ class BlackBoxEngine {
 
     Object handleReturn(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName, String iReturnStatementCodeString) {
         XMLASTNode astNodeForChecking = astNode
-        while (!(astNodeForChecking instanceof XMLMethodNode || (astNodeForChecking instanceof XMLExpression && astNodeForChecking.getExpressionName() == "ClosureExpression"))) {
+        while (!(astNodeForChecking instanceof XMLMethodNode || (astNodeForChecking instanceof XMLExpression && astNodeForChecking.getExpressionClassName() == "ClosureExpression"))) {
             astNodeForChecking = astNodeForChecking.parentAstNode
         }
         Object expressionResult = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
@@ -88,10 +88,26 @@ class BlackBoxEngine {
                 astNodeForChecking.setMethodResult(TraceSerializer.createXMLTraceTrace(expressionResult, iReturnStatementCodeString))
                 break
             case XMLExpression:
-                astNodeForChecking.setExpressionResult(TraceSerializer.createXMLTraceTrace(expressionResult, iReturnStatementCodeString))
+                astNodeForChecking.setExpressionResult(expressionResult.toString())
                 break
         }
         return expressionResult
+    }
+
+    void expressionExecutionOpen(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
+        XMLExpression xmlExpression = new XMLExpression()
+        xmlExpression.parentAstNode = astNode
+        xmlExpression.setAstNodeList(new XMLASTNodeList())
+        xmlExpression.setStartDateTime(getXMLGregorianCalendar())
+        xmlExpression.setExpressionClassName(iExpressionName)
+        xmlExpression.setRestoredScriptCode(iRestoredScriptCode)
+        xmlExpression.setColumnNumber(iColumnNumber as BigInteger)
+        xmlExpression.setLastColumnNumber(iLastColumnNumber as BigInteger)
+        xmlExpression.setLineNumber(iLineNumber as BigInteger)
+        xmlExpression.setLastLineNumber(iLastLineNumber as BigInteger)
+        xmlExpression.setSourceNodeName(iNodeSourceName)
+        astNode.getAstNodeList().getAstNode().add(xmlExpression)
+        astNode = xmlExpression
     }
 
     Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName) {
@@ -99,7 +115,7 @@ class BlackBoxEngine {
         xmlExpression.parentAstNode = astNode
         xmlExpression.setAstNodeList(new XMLASTNodeList())
         xmlExpression.setStartDateTime(getXMLGregorianCalendar())
-        xmlExpression.setExpressionName(iExpressionName)
+        xmlExpression.setExpressionClassName(iExpressionName)
         xmlExpression.setRestoredScriptCode(iRestoredScriptCode)
         xmlExpression.setColumnNumber(iColumnNumber as BigInteger)
         xmlExpression.setLastColumnNumber(iLastColumnNumber as BigInteger)
@@ -112,7 +128,7 @@ class BlackBoxEngine {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpression.setExpressionResult(TraceSerializer.createXMLTraceTrace(evaluationResult))
+                xmlExpression.setExpressionResult(evaluationResult.toString())
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -181,7 +197,7 @@ class BlackBoxEngine {
         executionClose()
         switch (iStatementName) {
             case "ReturnStatement":
-                while (!(astNode instanceof XMLMethodNode || (astNode instanceof XMLExpression && astNode.getExpressionName() == "ClosureExpression"))) {
+                while (!(astNode instanceof XMLMethodNode || (astNode instanceof XMLExpression && astNode.getExpressionClassName() == "ClosureExpression"))) {
                     executionClose()
                 }
                 break

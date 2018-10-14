@@ -1,12 +1,8 @@
 package groovy
 
-import com.thoughtworks.xstream.XStream
+
 import groovy.inspect.swingui.AstNodeToScriptVisitor
-import infinite_logging.prototype.groovy.XMLASTTrace
-import infinite_logging.prototype.groovy.XMLListTrace
-import infinite_logging.prototype.groovy.XMLMapEntry
-import infinite_logging.prototype.groovy.XMLMapTrace
-import infinite_logging.prototype.groovy.XMLTrace
+import infinite_logging.prototype.groovy.*
 import org.codehaus.groovy.ast.ASTNode
 import org.codehaus.groovy.ast.ClassNode
 
@@ -43,20 +39,16 @@ class TraceSerializer {
                 xmlMapEntry.setValue(xMLTraceValue)
                 xMLTrace.getMapEntry().add(xmlMapEntry)
             }
-        }  else if (iTrace instanceof List) {
+        } else if (iTrace instanceof List) {
             xMLTrace = new XMLListTrace()
             xMLTrace.setSize(iTrace.size() as BigInteger)
             iTrace.eachWithIndex { Object listEntry, Integer index ->
                 XMLTrace xMLTraceValue = createXMLTraceTrace(listEntry, index.toString())
-                ((XMLListTrace)xMLTrace).getCollectionElement().add(xMLTraceValue)
+                ((XMLListTrace) xMLTrace).getCollectionElement().add(xMLTraceValue)
             }
         } else {
             xMLTrace = new XMLTrace()
-            if (iTrace instanceof XStreamSuitable) {
-                xMLTrace.setSerializedRepresentation(new XStream().toXML(iTrace))
-            } else {
-                xMLTrace.setSerializedRepresentation(iTrace.toString())
-            }
+            xMLTrace.setSerializedRepresentation(iTrace.toString())
         }
         if (iTraceName != null) {
             xMLTrace.setVariableName(iTraceName)

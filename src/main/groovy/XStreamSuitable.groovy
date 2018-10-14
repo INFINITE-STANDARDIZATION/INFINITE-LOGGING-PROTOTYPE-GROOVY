@@ -1,5 +1,0 @@
-package groovy
-
-interface XStreamSuitable {
-
-}

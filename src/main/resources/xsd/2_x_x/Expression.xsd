@@ -9,10 +9,10 @@
         <xs:complexContent>
             <xs:extension base="ASTNode">
                 <xs:sequence>
-                    <xs:element type="Trace" name="expressionResult" minOccurs="0"/>
+                    <xs:element name="expressionResult" type="xs:string"/>
                 </xs:sequence>
-                <xs:attribute name="expressionTypeClassName" type="xs:string" use="required"/>
-                <xs:attribute name="expressionName" type="xs:string" use="required"/>
+                <xs:attribute name="expressionClassName" type="xs:string" use="required"/>
+                <xs:attribute name="resultClassName" type="xs:string"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

@@ -14,6 +14,7 @@ import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.syntax.Types
 import org.codehaus.groovy.transform.AbstractASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
+import org.codehaus.groovy.transform.sc.ListOfExpressionsExpression
 
 @ToString(includeNames = true, includeFields = true, includePackage = false)
 @GroovyASTTransformation(
@@ -117,7 +118,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         try {
             //See also: https://issues.apache.org/jira/projects/GROOVY/issues/GROOVY-8834
             switch (iExpression) {
-                //IN EACH CASE EITHER "iExpression.visit" OR "transform(iExpression.childExpression)" SHOULD BE CALLED OTHERWISE TRAVERSING WILL TERMINATE EARLY
+            //IN EACH CASE EITHER "iExpression.visit" OR "transform(iExpression.childExpression)" SHOULD BE CALLED OTHERWISE TRAVERSING WILL TERMINATE EARLY
                 case null:
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case EmptyExpression:
@@ -159,11 +160,33 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                     return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
                 case DeclarationExpression:
                     //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
+                    ListOfExpressionsExpression listOfExpressionsExpression = new ListOfExpressionsExpression()
                     Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "DeclarationExpression:rightExpression")
                     DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression, iExpression.operation, transformedRightExpression)
+                    String iOrigExpressionCode = codeString(iExpression)
+                    MethodCallExpression expressionExecutionOpenMethodCallExpression = GeneralUtils.callX(
+                            GeneralUtils.varX("automaticBlackBox"),
+                            "expressionExecutionOpen",
+                            GeneralUtils.args(
+                                    GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                                    GeneralUtils.constX(iOrigExpressionCode),
+                                    GeneralUtils.constX(iExpression.getColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                                    GeneralUtils.constX(iExpression.getLineNumber()),
+                                    GeneralUtils.constX(iExpression.getLastLineNumber()),
+                                    GeneralUtils.constX(iNodeSourceName)
+                            )
+                    )
+                    MethodCallExpression expressionExecutionCloseMethodCallExpression = GeneralUtils.callX(
+                            GeneralUtils.varX("automaticBlackBox"),
+                            "executionClose"
+                    )
+                    listOfExpressionsExpression.addExpression(expressionExecutionOpenMethodCallExpression)
+                    listOfExpressionsExpression.addExpression(transformedDeclarationExpression)
+                    listOfExpressionsExpression.addExpression(expressionExecutionCloseMethodCallExpression)
                     transformedDeclarationExpression.copyNodeMetaData(iExpression)
                     transformedDeclarationExpression.setSourcePosition(iExpression)
-                    return blackBoxEngine.methodResult("transformedDeclarationExpression", transformedDeclarationExpression) as Expression
+                    return blackBoxEngine.methodResult("listOfExpressionsExpression", listOfExpressionsExpression) as Expression
                 case BinaryExpression:
                     //Workaround of: https://issues.apache.org/jira/browse/GROOVY-8834
                     Expression transformedRightExpression = transformExpression(iExpression.rightExpression, iBlackBoxLevel, "BinaryExpression:rightExpression")
