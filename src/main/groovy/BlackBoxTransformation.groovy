@@ -220,7 +220,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
-    private BlockStatement transformControlStatement(Statement iStatement, String iSourceNodeName) {
+    private static BlockStatement transformControlStatement(Statement iStatement, String iSourceNodeName) {
         BlockStatement blockStatement = GeneralUtils.block(new VariableScope())
         blockStatement.addStatement(text2statement("""automaticBlackBox.handleControlStatement("${
             iStatement.getClass().getSimpleName()
@@ -289,7 +289,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     Expression transformExpression(Expression iExpression, String iSourceNodeName) {
         //see also: https://issues.apache.org/jira/browse/GROOVY-8834
-        //todo: subclasses of below classes - also
         Expression transformedExpression = iExpression
         if (iExpression == null ||
                 blackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value() ||
