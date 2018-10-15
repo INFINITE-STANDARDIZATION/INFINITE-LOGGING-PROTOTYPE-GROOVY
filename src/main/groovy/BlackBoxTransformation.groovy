@@ -30,12 +30,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     void visit(ASTNode[] iAstNodeArray, SourceUnit iSourceUnit) {
         try {
-            ////////////////
-            //IMPORTANT: AT NO POINT OF TIME NEW BLOCK STATEMENTS SHOULD BE CREATED AS IT AFFECTS VARIABLE SCOPE
-            //IN GROOVY BLOCK STATEMENT SHOULD BE DONE ABSTRACT WITH CONCRETE IMPLEMENTATIONS FOR CLASSES LIKE LOOP BLOCK ETC
-            //VARIABLE SCOPE OF DECLARATIONS WITHIN BLOCK STATEMENT IS LOCAL AND CAN NOT BE CHANGED!
-            ////////////////
             ASTNode.getMetaClass().origCodeString = null
+            ASTNode.getMetaClass().isTransformed = null
             init(iAstNodeArray, iSourceUnit)
             MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
@@ -90,6 +86,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             )
             methodCallExpression.copyNodeMetaData(iExpression)
             methodCallExpression.setSourcePosition(iExpression)
+            methodCallExpression.isTransformed = true
             return methodCallExpression
         }
     }
@@ -113,6 +110,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         )
         methodCallExpression.copyNodeMetaData(iExpression)
         methodCallExpression.setSourcePosition(iExpression)
+        methodCallExpression.isTransformed = true
         return methodCallExpression
     }
 
@@ -206,7 +204,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return stringWriter.getBuffer().toString().replace("\$", "")
     }
 
-    static final Boolean methodArgumentsPresent(Object iArgs) {
+    private static final Boolean methodArgumentsPresent(Object iArgs) {
         if (iArgs != null) {
             if (iArgs instanceof Collection) {
                 return iArgs.size() > 0
@@ -230,11 +228,14 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             iStatement.getLineNumber()
         }, ${iStatement.getLastLineNumber()}, "${iSourceNodeName}")"""))
         blockStatement.addStatement(iStatement)
+        blockStatement.copyNodeMetaData(iStatement)
+        blockStatement.setSourcePosition(iStatement)
+        blockStatement.isTransformed = true
         return blockStatement
     }
 
     Statement transformStatement(Statement iStatement, String iSourceNodeName) {
-        if (iStatement == null || iStatement instanceof EmptyStatement) {
+        if (iStatement == null || iStatement instanceof EmptyStatement || iStatement.isTransformed == true) {
             return iStatement
         }
         if (blackBoxLevel.value() < BlackBoxLevel.STATEMENT.value() || iStatement instanceof BlockStatement || iStatement instanceof ExpressionStatement) {
@@ -255,6 +256,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         blockStatement.addStatement(text2statement("automaticBlackBox.executionClose()"))
         blockStatement.copyNodeMetaData(iStatement)
         blockStatement.setSourcePosition(iStatement)
+        blockStatement.isTransformed = true
         return blockStatement
     }
 
@@ -282,8 +284,9 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         listOfExpressionsExpression.addExpression(expressionExecutionOpenMethodCallExpression)
         listOfExpressionsExpression.addExpression(transformedDeclarationExpression)
         listOfExpressionsExpression.addExpression(expressionExecutionCloseMethodCallExpression)
-        transformedDeclarationExpression.copyNodeMetaData(iExpression)
-        transformedDeclarationExpression.setSourcePosition(iExpression)
+        listOfExpressionsExpression.copyNodeMetaData(iExpression)
+        listOfExpressionsExpression.setSourcePosition(iExpression)
+        listOfExpressionsExpression.isTransformed = true
         return listOfExpressionsExpression
     }
 
@@ -295,7 +298,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 iExpression instanceof EmptyExpression ||
                 iExpression instanceof MapEntryExpression ||
                 iExpression instanceof VariableExpression ||
-                iExpression instanceof ArgumentListExpression
+                iExpression instanceof ArgumentListExpression ||
+                iExpression.isTransformed == true
         ) {
             return iExpression
         } else if (iExpression.getClass() == DeclarationExpression.class) {
@@ -354,6 +358,9 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         } else if (iExpression.getClass() == UnaryPlusExpression.class) {
             transformedExpression = new UnaryPlusExpression(transformExpression(iExpression.getExpression() as Expression, "UnaryPlusExpression:expression"))
         }
+        transformedExpression.isTransformed = true
+        transformedExpression.copyNodeMetaData(iExpression)
+        transformedExpression.setSourcePosition(iExpression)
         return wrapExpressionIntoMethodCallExpression(transformedExpression, iSourceNodeName)
     }
 
