@@ -25,5 +25,5 @@ void visitBitwiseNegationExpressionStatementLevel() {
 
 @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitBitwiseNegationExpressionExpressionLevel() {
-    (Integer) "1"
+    //todo: unimplemented
 }

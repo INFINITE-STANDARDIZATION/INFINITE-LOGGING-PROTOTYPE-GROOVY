@@ -2,6 +2,7 @@ package groovy
 
 import groovy.inspect.swingui.AstNodeToScriptVisitor
 import groovy.transform.ToString
+import groovy.util.logging.Slf4j
 import org.apache.commons.lang3.exception.ExceptionUtils
 import org.codehaus.groovy.ast.*
 import org.codehaus.groovy.ast.builder.AstBuilder
@@ -12,7 +13,6 @@ import org.codehaus.groovy.classgen.VariableScopeVisitor
 import org.codehaus.groovy.control.CompilePhase
 import org.codehaus.groovy.control.SourceUnit
 import org.codehaus.groovy.syntax.Token
-import org.codehaus.groovy.syntax.Types
 import org.codehaus.groovy.transform.AbstractASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
 import org.codehaus.groovy.transform.sc.ListOfExpressionsExpression
@@ -21,44 +21,40 @@ import org.codehaus.groovy.transform.sc.ListOfExpressionsExpression
 @GroovyASTTransformation(
         phase = CompilePhase.SEMANTIC_ANALYSIS
 )
+@Slf4j
 class BlackBoxTransformation extends AbstractASTTransformation {
 
-    final String PCLASSSIMPLENAME = this.getClass().getSimpleName()
-    final String PPACKAGENAME = this.getClass().getPackage().getName()
-    final BlackBoxEngine blackBoxEngine = BlackBoxEngine.getInstance()
     BlackBoxVisitor blackBoxVisitor
+    AnnotationNode annotationNode
+    BlackBoxLevel blackBoxLevel
 
     void visit(ASTNode[] iAstNodeArray, SourceUnit iSourceUnit) {
-        final String LMETHODNAME = "visit"
         try {
             ////////////////
             //IMPORTANT: AT NO POINT OF TIME NEW BLOCK STATEMENTS SHOULD BE CREATED AS IT AFFECTS VARIABLE SCOPE
             //IN GROOVY BLOCK STATEMENT SHOULD BE DONE ABSTRACT WITH CONCRETE IMPLEMENTATIONS FOR CLASSES LIKE LOOP BLOCK ETC
             //VARIABLE SCOPE OF DECLARATIONS WITHIN BLOCK STATEMENT IS LOCAL AND CAN NOT BE CHANGED!
             ////////////////
+            ASTNode.getMetaClass().origCodeString = null
             init(iAstNodeArray, iSourceUnit)
             MethodNode methodNode = iAstNodeArray[1] as MethodNode
             String methodName = methodNode.getName()
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
             Thread.currentThread().setName("Compilation_$className.$methodName")
-            blackBoxEngine.methodExecutionOpen(PCLASSSIMPLENAME, PPACKAGENAME, LMETHODNAME, ["className": className, "methodName": methodName, "methodNode.getCode()": methodNode.getCode()])
-            AnnotationNode annotationNode = iAstNodeArray[0] as AnnotationNode
-            BlackBoxLevel blackBoxLevel = getBlackBoxLevel(annotationNode)
+            annotationNode = iAstNodeArray[0] as AnnotationNode
+            blackBoxLevel = getBlackBoxLevel(annotationNode)
             blackBoxVisitor = new BlackBoxVisitor(blackBoxLevel, annotationNode, this)
             BlockStatement decoratedMethodNodeBlockStatement = new BlockStatement()
             decoratedMethodNodeBlockStatement.setSourcePosition(methodNode.getCode())
             decoratedMethodNodeBlockStatement.copyNodeMetaData(methodNode.getCode())
             decoratedMethodNodeBlockStatement.addStatement(createLoggerDeclaration())
-            decoratedMethodNodeBlockStatement.addStatement(transformMethod(methodNode, blackBoxLevel, annotationNode))
+            decoratedMethodNodeBlockStatement.addStatement(transformMethod(methodNode))
             methodNode.setCode(decoratedMethodNodeBlockStatement)
             new VariableScopeVisitor(sourceUnit, true).visitClass(methodNode.getDeclaringClass())//<<<<<<<<<
-            blackBoxEngine.methodResult("methodNode.getCode()", methodNode.getCode())
+            log.debug(codeString(methodNode.getCode()))
         } catch (Throwable throwable) {
-            System.out.println(ExceptionUtils.getStackTrace(throwable))
-            blackBoxEngine.exception(throwable)
+            log.error(ExceptionUtils.getStackTrace(throwable))
             throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
         }
     }
 
@@ -69,248 +65,64 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return constantExpression.getValue() as BlackBoxLevel
     }
 
-    Expression transformReturnStatementExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iSourceNodeName, String iReturnStatementCodeString) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
-        try {
-            if (iExpression == null || iExpression instanceof EmptyExpression) {
-                return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-            }
-            if (!(iExpression instanceof DeclarationExpression)) {
-                if (iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                }
-                String iOrigExpressionCode = codeString(iExpression)
-                ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
-                closureExpression.setVariableScope(new VariableScope())
-                MethodCallExpression methodCallExpression = GeneralUtils.callX(
-                        GeneralUtils.varX("automaticBlackBox"),
-                        "handleReturn",
-                        GeneralUtils.args(
-                                GeneralUtils.constX(iExpression.getClass().getSimpleName()),
-                                GeneralUtils.constX(iOrigExpressionCode),
-                                GeneralUtils.constX(iExpression.getColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLastColumnNumber()),
-                                GeneralUtils.constX(iExpression.getLineNumber()),
-                                GeneralUtils.constX(iExpression.getLastLineNumber()),
-                                closureExpression,
-                                GeneralUtils.constX(iSourceNodeName),
-                                GeneralUtils.constX(iReturnStatementCodeString)
-                        )
-                )
-                methodCallExpression.copyNodeMetaData(iExpression)
-                methodCallExpression.setSourcePosition(iExpression)
-                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                return blackBoxEngine.methodResult("methodCallExpression", methodCallExpression) as Expression
-            } else {
-                iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-            }
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
+    Expression transformReturnStatementExpression(Expression iExpression, String iSourceNodeName, String iReturnStatementCodeString) {
+        if (iExpression == null || iExpression instanceof EmptyExpression) {
+            return iExpression
+        } else if (blackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
+            return iExpression
+        } else {
+            ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
+            closureExpression.setVariableScope(new VariableScope())
+            MethodCallExpression methodCallExpression = GeneralUtils.callX(
+                    GeneralUtils.varX("automaticBlackBox"),
+                    "handleReturn",
+                    GeneralUtils.args(
+                            GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                            GeneralUtils.constX(iExpression.origCodeString),
+                            GeneralUtils.constX(iExpression.getColumnNumber()),
+                            GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                            GeneralUtils.constX(iExpression.getLineNumber()),
+                            GeneralUtils.constX(iExpression.getLastLineNumber()),
+                            closureExpression,
+                            GeneralUtils.constX(iSourceNodeName),
+                            GeneralUtils.constX(iReturnStatementCodeString)
+                    )
+            )
+            methodCallExpression.copyNodeMetaData(iExpression)
+            methodCallExpression.setSourcePosition(iExpression)
+            return methodCallExpression
         }
     }
-    
-    private ListOfExpressionsExpression transformAssignmentExpression(BinaryExpression iExpression, BlackBoxLevel iBlackBoxLevel, String iSourceNodeName) {
-        ListOfExpressionsExpression listOfExpressionsExpression = new ListOfExpressionsExpression()
-        //<<<<<<<<<<<<<<VISIT
-        Expression transformedRightExpression = transformExpression(iExpression.rightExpression as Expression, iBlackBoxLevel, "DeclarationExpression:rightExpression")
-        DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression as Expression, iExpression.operation as Token, transformedRightExpression)
-        String iOrigExpressionCode = codeString(iExpression)
-        MethodCallExpression expressionExecutionOpenMethodCallExpression = GeneralUtils.callX(
+
+    private static MethodCallExpression wrapExpressionIntoMethodCallExpression(Expression iExpression, iSourceNodeName) {
+        ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
+        closureExpression.setVariableScope(new VariableScope())
+        MethodCallExpression methodCallExpression = GeneralUtils.callX(
                 GeneralUtils.varX("automaticBlackBox"),
-                "expressionExecutionOpen",
+                "expressionEvaluation",
                 GeneralUtils.args(
                         GeneralUtils.constX(iExpression.getClass().getSimpleName()),
-                        GeneralUtils.constX(iOrigExpressionCode),
+                        GeneralUtils.constX(iExpression.origCodeString),
                         GeneralUtils.constX(iExpression.getColumnNumber()),
                         GeneralUtils.constX(iExpression.getLastColumnNumber()),
                         GeneralUtils.constX(iExpression.getLineNumber()),
                         GeneralUtils.constX(iExpression.getLastLineNumber()),
+                        closureExpression,
                         GeneralUtils.constX(iSourceNodeName)
                 )
         )
-        MethodCallExpression expressionExecutionCloseMethodCallExpression = GeneralUtils.callX(
-                GeneralUtils.varX("automaticBlackBox"),
-                "executionClose"
-        )
-        listOfExpressionsExpression.addExpression(expressionExecutionOpenMethodCallExpression)
-        listOfExpressionsExpression.addExpression(transformedDeclarationExpression)
-        listOfExpressionsExpression.addExpression(expressionExecutionCloseMethodCallExpression)
-        transformedDeclarationExpression.copyNodeMetaData(iExpression)
-        transformedDeclarationExpression.setSourcePosition(iExpression)
-        return blackBoxEngine.methodResult("listOfExpressionsExpression", listOfExpressionsExpression) as ListOfExpressionsExpression
+        methodCallExpression.copyNodeMetaData(iExpression)
+        methodCallExpression.setSourcePosition(iExpression)
+        return methodCallExpression
     }
 
-    Expression transformExpression(Expression iExpression, BlackBoxLevel iBlackBoxLevel, String iSourceNodeName) {
-        /*See also: https://issues.apache.org/jira/browse/GROOVY-8834*/
-        /*To debug the compilation process: use class implementing Runnable interface*/
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformExpression", ["iExpression": iExpression, "iBlackBoxLevel": iBlackBoxLevel])
-        try {
-            if (codeString(iExpression).contains("automaticBlackBox")) {
-                throw new Exception("Recursive transformation detected")
-            }
-            //See also: https://issues.apache.org/jira/projects/GROOVY/issues/GROOVY-8834
-            switch (iExpression) {
-            //IN EACH CASE EITHER "iExpression.visit" OR "transform(iExpression.childExpression)" SHOULD BE CALLED OTHERWISE TRAVERSING WILL TERMINATE EARLY
-                case null:
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                case EmptyExpression:
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                case iBlackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value():
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                case BooleanExpression:
-                    Expression transformedChildExpression = transformExpression(iExpression.getExpression() as Expression, iBlackBoxLevel, "BooleanExpression:getExpression()")
-                    BooleanExpression transformedBooleanExpression = new BooleanExpression(transformedChildExpression)
-                    Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, transformedBooleanExpression, iSourceNodeName)
-                    return blackBoxEngine.methodResult("transformedExpression", transformedExpression) as Expression
-                case StaticMethodCallExpression:
-                    StaticMethodCallExpression staticMethodCallExpression = new StaticMethodCallExpression(
-                            iExpression.getOwnerType() as ClassNode,
-                            iExpression.getMethod() as String,
-                            transformExpression(iExpression.getArguments() as ArgumentListExpression, iBlackBoxLevel, "StaticMethodCallExpression:getArguments()")//<<<<<<<<<<<<<<VISIT
-                    )
-                    return blackBoxEngine.methodResult(
-                            "wrapExpressionIntoMethodCallExpression(iExpression, staticMethodCallExpression, iSourceNodeName)",
-                            wrapExpressionIntoMethodCallExpression(iExpression, staticMethodCallExpression, iSourceNodeName)
-                    ) as Expression
-                case ArgumentListExpression:
-                    blackBoxVisitor.transformExpressionList(iExpression.getExpressions() as List, "ArgumentListExpression:getExpressions()")
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                case MapEntryExpression:
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                    return blackBoxEngine.methodResult("iExpression", iExpression) as Expression
-                case DeclarationExpression:
-                    return blackBoxEngine.methodResult("listOfExpressionsExpression", transformAssignmentExpression(iExpression as DeclarationExpression, iBlackBoxLevel, iSourceNodeName)) as Expression
-                case BinaryExpression:
-                    Expression transformedRightExpression = transformExpression(iExpression.rightExpression as Expression, iBlackBoxLevel, "BinaryExpression:rightExpression")
-                    Expression transformedLeftExpression
-                    if (iExpression.operation.text == "=") {
-                        transformedLeftExpression = iExpression.leftExpression
-                        iExpression.leftExpression.visit(blackBoxVisitor)
-                    } else {
-                        transformedLeftExpression = transformExpression(iExpression.leftExpression as Expression, iBlackBoxLevel, "BinaryExpression:leftExpression")
-                    }
-                    BinaryExpression transformedBinaryExpression = new BinaryExpression(transformedLeftExpression as Expression, iExpression.operation as Token, transformedRightExpression)
-                    Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, transformedBinaryExpression, iSourceNodeName)
-                    return blackBoxEngine.methodResult("transformedExpression", transformedExpression) as Expression
-                default:
-                    Expression transformedExpression = wrapExpressionIntoMethodCallExpression(iExpression, iExpression, iSourceNodeName)
-                    iExpression.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                    return blackBoxEngine.methodResult("transformedExpression", transformedExpression) as Expression
-            }
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
-        }
-    }
-
-    private MethodCallExpression wrapExpressionIntoMethodCallExpression(Expression iOriginalExpression, Expression iTransformedExpression, String iSourceNodeName) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "wrapExpressionIntoMethodCallExpression", ["iOriginalExpression": iOriginalExpression, "iTransformedExpression": iTransformedExpression, "iSourceNodeName": iSourceNodeName])
-        try {
-            String origExpressionCode = codeString(iOriginalExpression)
-            ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iTransformedExpression))
-            closureExpression.setVariableScope(new VariableScope())
-            MethodCallExpression methodCallExpression = GeneralUtils.callX(
-                    GeneralUtils.varX("automaticBlackBox"),
-                    "expressionEvaluation",
-                    GeneralUtils.args(
-                            GeneralUtils.constX(iOriginalExpression.getClass().getSimpleName()),
-                            GeneralUtils.constX(origExpressionCode),
-                            GeneralUtils.constX(iOriginalExpression.getColumnNumber()),
-                            GeneralUtils.constX(iOriginalExpression.getLastColumnNumber()),
-                            GeneralUtils.constX(iOriginalExpression.getLineNumber()),
-                            GeneralUtils.constX(iOriginalExpression.getLastLineNumber()),
-                            closureExpression,
-                            GeneralUtils.constX(iSourceNodeName)
-                    )
-            )
-            methodCallExpression.copyNodeMetaData(iOriginalExpression)
-            methodCallExpression.setSourcePosition(iOriginalExpression)
-            return methodCallExpression
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
-        }
-    }
-
-    private List<Statement> transformControlStatement(Statement iStatement, String iSourceNodeName) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformStatement", ["iStatement": iStatement])
-        try {
-            String iOrigStatementCode = codeString(iStatement)
-            List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
-            decoratedStatements.add(text2statement("""automaticBlackBox.handleControlStatement("${
-                iStatement.getClass().getSimpleName()
-            }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
-                iStatement.getLastColumnNumber()
-            }, ${
-                iStatement.getLineNumber()
-            }, ${iStatement.getLastLineNumber()}, "${iSourceNodeName}")"""))
-            decoratedStatements.add(iStatement)
-            iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-            return blackBoxEngine.methodResult("decoratedStatements", decoratedStatements) as List<Statement>
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
-        }
-    }
-
-    List<Statement> transformStatement(Statement iStatement, BlackBoxLevel iBlackBoxLevel, String iSourceNodeName) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformStatement", ["iStatement": iStatement, "iBlackBoxLevel": iBlackBoxLevel])
-        try {
-            if (codeString(iStatement).contains("automaticBlackBox")) {
-                throw new Exception("Recursive transformation detected")
-            }
-            if (iStatement == null || iStatement instanceof EmptyStatement) {
-                return blackBoxEngine.methodResult("[iStatement]", [iStatement]) as List<Statement>
-            }
-            if (iBlackBoxLevel.value() < BlackBoxLevel.STATEMENT.value() || iStatement instanceof BlockStatement || iStatement instanceof ExpressionStatement) {
-                iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-                return blackBoxEngine.methodResult("[iStatement]", [iStatement]) as List<Statement>
-            }
-            if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement) {
-                return blackBoxEngine.methodResult("transformControlStatement(iStatement)", transformControlStatement(iStatement, iSourceNodeName)) as List<Statement>
-            }
-            String iOrigStatementCode = codeString(iStatement)
-            List<Statement> decoratedStatements = new BlockStatement().getStatements().getClass().newInstance() as List<Statement>
-            decoratedStatements.add(text2statement("""automaticBlackBox.statementExecutionOpen("${
-                iStatement.getClass().getSimpleName()
-            }", \"\"\"$iOrigStatementCode\"\"\", ${iStatement.getColumnNumber()}, ${
-                iStatement.getLastColumnNumber()
-            }, ${
-                iStatement.getLineNumber()
-            }, ${iStatement.getLastLineNumber()}, "${iSourceNodeName}")"""))
-            decoratedStatements.add(iStatement)
-            decoratedStatements.add(text2statement("automaticBlackBox.executionClose()"))
-            iStatement.visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT
-            return blackBoxEngine.methodResult("decoratedStatements", decoratedStatements) as List<Statement>
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
-        }
-    }
-
-    private Statement transformMethod(MethodNode iMethodNode, BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode) {
-        blackBoxEngine.methodExecutionOpen(blackBoxEngine.PCLASSSIMPLENAME, blackBoxEngine.PPACKAGENAME, "transformMethod", ["iMethodNode.getCode()": iMethodNode.getCode(), "iBlackBoxLevel": iBlackBoxLevel])
-        try {
-            Parameter[] methodParameters = iMethodNode.getParameters()
+    private Statement transformMethod(MethodNode iMethodNode) {
+                   Parameter[] methodParameters = iMethodNode.getParameters()
             BlockStatement decoratedBlockStatement = new BlockStatement()
             BlockStatement tryBlock = new BlockStatement()
             tryBlock.addStatement(iMethodNode.getCode())
             Statement finallyBlock
-            if (iBlackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
+            if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
                 decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
                     iMethodNode.getDeclaringClass().getNameWithoutPackage()
                 }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
@@ -325,24 +137,20 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                     iMethodNode.getLastLineNumber()
                 })""", methodParameters))
                 finallyBlock = text2statement("automaticBlackBox.executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(automaticThrowable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
-            } else if (iBlackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
-                finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch("automaticBlackBox.exception(automaticThrowable)", tryBlock, finallyBlock, methodParameters, iAnnotationNode))
-            } else {
+                decoratedBlockStatement.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
+                decoratedBlockStatement.copyNodeMetaData(iMethodNode.getCode())
+                decoratedBlockStatement.setSourcePosition(iMethodNode.getCode())
                 iMethodNode.getCode().visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT<<<<<
-                return blackBoxEngine.methodResult("iMethodNode.getCode()", iMethodNode.getCode()) as Statement
+                return decoratedBlockStatement
+            } else if (blackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
+                finallyBlock = new EmptyStatement()
+                decoratedBlockStatement.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
+                decoratedBlockStatement.copyNodeMetaData(iMethodNode.getCode())
+                decoratedBlockStatement.setSourcePosition(iMethodNode.getCode())
+                return decoratedBlockStatement
+            } else {
+                return iMethodNode.getCode()
             }
-            decoratedBlockStatement.copyNodeMetaData(iMethodNode.getCode())
-            decoratedBlockStatement.setSourcePosition(iMethodNode.getCode())
-            iMethodNode.getCode().visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT<<<<<
-            return blackBoxEngine.methodResult("decoratedBlockStatement", decoratedBlockStatement) as Statement
-        } catch (Throwable throwable) {
-            blackBoxEngine.exception(throwable)
-            throw throwable
-        } finally {
-            blackBoxEngine.executionClose()
-        }
     }
 
     private static Statement createLoggerDeclaration() {
@@ -362,22 +170,22 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         )
     }
 
-    private TryCatchStatement createTryCatch(String iLogErrorCodeLine, BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters, AnnotationNode iAnnotationNode) {
+    private TryCatchStatement createTryCatch(BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters) {
         TryCatchStatement tryCatchStatement = new TryCatchStatement(iMainBlock, iFinallyBlock)
         BlockStatement throwBlock = new BlockStatement()
-        throwBlock.addStatement(text2statement(iLogErrorCodeLine, iParameters))
-        throwBlock.addStatement(createThrowStatement(iAnnotationNode))
+        throwBlock.addStatement(text2statement("automaticBlackBox.exception(automaticThrowable)", iParameters))
+        throwBlock.addStatement(createThrowStatement())
         tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "automaticThrowable"), throwBlock))
         return tryCatchStatement
     }
 
-    private static Statement createThrowStatement(AnnotationNode iAnnotationNode) {
+    private Statement createThrowStatement() {
         ThrowStatement throwStatement = GeneralUtils.throwS(GeneralUtils.varX("automaticThrowable"))
-        iAnnotationNode.setSourcePosition(iAnnotationNode)
+        throwStatement.setSourcePosition(annotationNode)
         return throwStatement
     }
 
-    Statement text2statement(String iCodeText, Parameter[] iParameters) {
+    static Statement text2statement(String iCodeText, Parameter[] iParameters) {
         String statementCode
         if (methodArgumentsPresent(iParameters)) {
             ArrayList<String> serializedParameters = new ArrayList<String>()
@@ -389,7 +197,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
         }
         List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, statementCode)
-        return blackBoxEngine.methodResult("resultingStatements.first()", resultingStatements.first()) as Statement
+        return resultingStatements.first() as Statement
     }
 
     static String codeString(ASTNode iAstNode) {
@@ -410,6 +218,144 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         } else {
             return false
         }
+    }
+
+    private BlockStatement transformControlStatement(Statement iStatement, String iSourceNodeName) {
+        BlockStatement blockStatement = GeneralUtils.block(new VariableScope())
+        blockStatement.addStatement(text2statement("""automaticBlackBox.handleControlStatement("${
+            iStatement.getClass().getSimpleName()
+        }", \"\"\"${iStatement.origCodeString}\"\"\", ${iStatement.getColumnNumber()}, ${
+            iStatement.getLastColumnNumber()
+        }, ${
+            iStatement.getLineNumber()
+        }, ${iStatement.getLastLineNumber()}, "${iSourceNodeName}")"""))
+        blockStatement.addStatement(iStatement)
+        return blockStatement
+    }
+
+    Statement transformStatement(Statement iStatement, String iSourceNodeName) {
+        if (iStatement == null || iStatement instanceof EmptyStatement) {
+            return iStatement
+        }
+        if (blackBoxLevel.value() < BlackBoxLevel.STATEMENT.value() || iStatement instanceof BlockStatement || iStatement instanceof ExpressionStatement) {
+            return iStatement
+        }
+        if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement) {
+            return transformControlStatement(iStatement, iSourceNodeName)
+        }
+        BlockStatement blockStatement = GeneralUtils.block(new VariableScope())
+        blockStatement.addStatement(text2statement("""automaticBlackBox.statementExecutionOpen("${
+            iStatement.getClass().getSimpleName()
+        }", \"\"\"${iStatement.origCodeString}\"\"\", ${iStatement.getColumnNumber()}, ${
+            iStatement.getLastColumnNumber()
+        }, ${
+            iStatement.getLineNumber()
+        }, ${iStatement.getLastLineNumber()}, "${iSourceNodeName}")"""))
+        blockStatement.addStatement(iStatement)
+        blockStatement.addStatement(text2statement("automaticBlackBox.executionClose()"))
+        blockStatement.copyNodeMetaData(iStatement)
+        blockStatement.setSourcePosition(iStatement)
+        return blockStatement
+    }
+
+    private ListOfExpressionsExpression transformDeclarationExpression(DeclarationExpression iExpression, String iSourceNodeName) {
+        ListOfExpressionsExpression listOfExpressionsExpression = new ListOfExpressionsExpression()
+        Expression transformedRightExpression = transformExpression(iExpression.rightExpression as Expression, "DeclarationExpression:rightExpression")
+        DeclarationExpression transformedDeclarationExpression = new DeclarationExpression(iExpression.leftExpression as Expression, iExpression.operation as Token, transformedRightExpression)
+        MethodCallExpression expressionExecutionOpenMethodCallExpression = GeneralUtils.callX(
+                GeneralUtils.varX("automaticBlackBox"),
+                "expressionExecutionOpen",
+                GeneralUtils.args(
+                        GeneralUtils.constX(iExpression.getClass().getSimpleName()),
+                        GeneralUtils.constX(iExpression.origCodeString),
+                        GeneralUtils.constX(iExpression.getColumnNumber()),
+                        GeneralUtils.constX(iExpression.getLastColumnNumber()),
+                        GeneralUtils.constX(iExpression.getLineNumber()),
+                        GeneralUtils.constX(iExpression.getLastLineNumber()),
+                        GeneralUtils.constX(iSourceNodeName)
+                )
+        )
+        MethodCallExpression expressionExecutionCloseMethodCallExpression = GeneralUtils.callX(
+                GeneralUtils.varX("automaticBlackBox"),
+                "executionClose"
+        )
+        listOfExpressionsExpression.addExpression(expressionExecutionOpenMethodCallExpression)
+        listOfExpressionsExpression.addExpression(transformedDeclarationExpression)
+        listOfExpressionsExpression.addExpression(expressionExecutionCloseMethodCallExpression)
+        transformedDeclarationExpression.copyNodeMetaData(iExpression)
+        transformedDeclarationExpression.setSourcePosition(iExpression)
+        return listOfExpressionsExpression
+    }
+
+    Expression transformExpression(Expression iExpression, String iSourceNodeName) {
+        //see also: https://issues.apache.org/jira/browse/GROOVY-8834
+        //todo: subclasses of below classes - also
+        Expression transformedExpression = iExpression
+        if (iExpression == null ||
+                blackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value() ||
+                iExpression instanceof EmptyExpression ||
+                iExpression instanceof MapEntryExpression ||
+                iExpression instanceof VariableExpression ||
+                iExpression instanceof ArgumentListExpression
+        ) {
+            return iExpression
+        } else if (iExpression.getClass() == DeclarationExpression.class) {
+            return transformDeclarationExpression(iExpression as DeclarationExpression, iSourceNodeName)
+        } else if (iExpression.getClass() == BinaryExpression.class) {
+            Expression transformedRightExpression = transformExpression(iExpression.rightExpression as Expression, "BinaryExpression:rightExpression")
+            Expression transformedLeftExpression
+            if (iExpression.operation.text == "=") {
+                transformedLeftExpression = iExpression.leftExpression
+            } else {
+                transformedLeftExpression = transformExpression(iExpression.leftExpression as Expression, "BinaryExpression:leftExpression")
+            }
+            transformedExpression = new BinaryExpression(transformedLeftExpression as Expression, iExpression.operation as Token, transformedRightExpression)
+        } else if (iExpression.getClass() == BitwiseNegationExpression.class) {
+            transformedExpression = new BitwiseNegationExpression(transformExpression(iExpression.getExpression() as Expression, "BitwiseNegationExpression:expression"))
+        } else if (iExpression.getClass() == NotExpression.class) {
+            transformedExpression = new NotExpression(transformExpression(iExpression.getExpression() as Expression, "NotExpression:expression"))
+        } else if (iExpression.getClass() == BooleanExpression.class) {
+            transformedExpression = new BooleanExpression(transformExpression(iExpression.getExpression() as Expression, "BooleanExpression:expression"))
+        } else if (iExpression.getClass() == CastExpression.class) {
+            transformedExpression = new CastExpression(iExpression.getType(), transformExpression(iExpression.getExpression() as Expression, "ClassExpression:expression"))
+        } else if (iExpression.getClass() == ConstructorCallExpression.class) {
+            transformedExpression = new ConstructorCallExpression(iExpression.getType(), transformExpression(iExpression.getArguments() as Expression, "ConstructorCallExpression:arguments"))
+        } else if (iExpression.getClass() == MethodPointerExpression.class) {
+            transformedExpression = new MethodPointerExpression(transformExpression(iExpression.getExpression() as Expression, "MethodPointerExpression:expression"),
+                    transformExpression(iExpression.getMethodName() as Expression, "MethodPointerExpression:methodName"))
+        } else if (iExpression.getClass() == AttributeExpression.class) {
+            transformedExpression = new AttributeExpression(transformExpression(iExpression.getObjectExpression() as Expression, "AttributeExpression:objectExpression"),
+                    transformExpression(iExpression.getProperty() as Expression, "PropertyExpression:property"))
+        } else if (iExpression.getClass() == PropertyExpression.class) {
+            transformedExpression = new PropertyExpression(transformExpression(iExpression.getObjectExpression() as Expression, "PropertyExpression:objectExpression"),
+                    transformExpression(iExpression.getProperty() as Expression, "PropertyExpression:property"))
+        } else if (iExpression.getClass() == RangeExpression.class) {
+            transformedExpression = new RangeExpression(transformExpression(iExpression.getFrom() as Expression, "RangeExpression:from"),
+                    transformExpression(iExpression.getTo() as Expression, "RangeExpression:to"), iExpression.isInclusive() as Boolean)
+        } else if (iExpression.getClass() == SpreadExpression.class) {
+            transformedExpression = new SpreadExpression(transformExpression(iExpression.getExpression() as Expression, "SpreadExpression:expression"))
+        } else if (iExpression.getClass() == SpreadMapExpression.class) {
+            transformedExpression = new SpreadMapExpression(transformExpression(iExpression.getExpression() as Expression, "SpreadExpression:expression"))
+        } else if (iExpression.getClass() == StaticMethodCallExpression.class) {
+            transformedExpression = new StaticMethodCallExpression(iExpression.getOwnerType() as ClassNode, iExpression.getMethod() as String,
+                    transformExpression(iExpression.getArguments() as Expression, "StaticMethodCallExpression:arguments"))
+        } else if (iExpression.getClass() == ElvisOperatorExpression.class) {
+            transformedExpression = new ElvisOperatorExpression(
+                    transformExpression(iExpression.getTrueExpression() as Expression, "ElvisOperatorExpression:trueExpression"),
+                    transformExpression(iExpression.getFalseExpression() as Expression, "ElvisOperatorExpression:falseExpression")
+            )
+        } else if (iExpression.getClass() == TernaryExpression.class) {
+            transformedExpression = new TernaryExpression(
+                    new BooleanExpression(transformExpression(iExpression.getBooleanExpression() as Expression, "TernaryExpression:booleanExpression")),
+                    transformExpression(iExpression.getTrueExpression() as Expression, "TernaryExpression:trueExpression"),
+                    transformExpression(iExpression.getFalseExpression() as Expression, "TernaryExpression:falseExpression")
+            )
+        } else if (iExpression.getClass() == UnaryMinusExpression.class) {
+            transformedExpression = new UnaryMinusExpression(transformExpression(iExpression.getExpression() as Expression, "UnaryMinusExpression:expression"))
+        } else if (iExpression.getClass() == UnaryPlusExpression.class) {
+            transformedExpression = new UnaryPlusExpression(transformExpression(iExpression.getExpression() as Expression, "UnaryPlusExpression:expression"))
+        }
+        return wrapExpressionIntoMethodCallExpression(transformedExpression, iSourceNodeName)
     }
 
 }

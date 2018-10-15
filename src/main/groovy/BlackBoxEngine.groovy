@@ -4,6 +4,7 @@ package groovy
 import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
+import org.codehaus.groovy.ast.ASTNode
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
