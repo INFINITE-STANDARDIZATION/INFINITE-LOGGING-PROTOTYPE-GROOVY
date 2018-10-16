@@ -1,7 +1,6 @@
 package groovy
 
 import groovy.transform.ToString
-import org.codehaus.groovy.ast.AnnotationNode
 import org.codehaus.groovy.ast.CodeVisitorSupport
 import org.codehaus.groovy.ast.VariableScope
 import org.codehaus.groovy.ast.expr.*
@@ -11,14 +10,12 @@ import org.codehaus.groovy.ast.tools.GeneralUtils
 @ToString(includeNames = true, includeFields = true)
 class BlackBoxVisitor extends CodeVisitorSupport {
 
-    BlackBoxLevel blackBoxLevel
-    AnnotationNode annotationNode
     BlackBoxTransformation blackBoxTransformation
+    BlackBoxLevel blackBoxLevel
 
-    BlackBoxVisitor(BlackBoxLevel iBlackBoxLevel, AnnotationNode iAnnotationNode, BlackBoxTransformation iBlackBoxTransformation) {
-        blackBoxLevel = iBlackBoxLevel
-        annotationNode = iAnnotationNode
+    BlackBoxVisitor(BlackBoxTransformation iBlackBoxTransformation, BlackBoxLevel iBlackBoxLevel) {
         blackBoxTransformation = iBlackBoxTransformation
+        blackBoxLevel = iBlackBoxLevel
     }
 
     void transformStatementList(List<Statement> iStatementListToTransform, String iSourceNodeName) {
@@ -45,73 +42,73 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBlockStatement(BlockStatement iBlockStatement) {
         iBlockStatement.origCodeString = blackBoxTransformation.codeString(iBlockStatement)
         super.visitBlockStatement(iBlockStatement)
-        transformStatementList(iBlockStatement.getStatements(), iBlockStatement.getClass().getSimpleName()+":statements")
+        transformStatementList(iBlockStatement.getStatements(), iBlockStatement.getClass().getSimpleName() + ":statements")
     }
 
     @Override
     void visitForLoop(ForStatement iForStatement) {
         iForStatement.origCodeString = blackBoxTransformation.codeString(iForStatement)
         super.visitForLoop(iForStatement)
-        iForStatement.setCollectionExpression(blackBoxTransformation.transformExpression(iForStatement.getCollectionExpression(), iForStatement.getClass().getSimpleName()+":collectionExpression"))
-        iForStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iForStatement.getLoopBlock(), iForStatement.getClass().getSimpleName()+":loopBlock")))
+        iForStatement.setCollectionExpression(blackBoxTransformation.transformExpression(iForStatement.getCollectionExpression(), iForStatement.getClass().getSimpleName() + ":collectionExpression"))
+        iForStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iForStatement.getLoopBlock(), iForStatement.getClass().getSimpleName() + ":loopBlock")))
     }
 
     @Override
     void visitWhileLoop(WhileStatement iWhileStatement) {
         iWhileStatement.origCodeString = blackBoxTransformation.codeString(iWhileStatement)
         super.visitWhileLoop(iWhileStatement)
-        iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iWhileStatement.getBooleanExpression(), iWhileStatement.getClass().getSimpleName()+":booleanExpression")))
-        iWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iWhileStatement.getLoopBlock(), iWhileStatement.getClass().getSimpleName()+":loopBlock")))
+        iWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iWhileStatement.getBooleanExpression(), iWhileStatement.getClass().getSimpleName() + ":booleanExpression")))
+        iWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iWhileStatement.getLoopBlock(), iWhileStatement.getClass().getSimpleName() + ":loopBlock")))
     }
 
     @Override
     void visitDoWhileLoop(DoWhileStatement iDoWhileStatement) {
         iDoWhileStatement.origCodeString = blackBoxTransformation.codeString(iDoWhileStatement)
         super.visitDoWhileLoop(iDoWhileStatement)
-        iDoWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iDoWhileStatement.getBooleanExpression(), iDoWhileStatement.getClass().getSimpleName()+":booleanExpression")))
-        iDoWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iDoWhileStatement.getLoopBlock(), iDoWhileStatement.getClass().getSimpleName()+":loopBlock")))
+        iDoWhileStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iDoWhileStatement.getBooleanExpression(), iDoWhileStatement.getClass().getSimpleName() + ":booleanExpression")))
+        iDoWhileStatement.setLoopBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iDoWhileStatement.getLoopBlock(), iDoWhileStatement.getClass().getSimpleName() + ":loopBlock")))
     }
 
     @Override
     void visitIfElse(IfStatement iIfStatement) {
         iIfStatement.origCodeString = blackBoxTransformation.codeString(iIfStatement)
         super.visitIfElse(iIfStatement)
-        iIfStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iIfStatement.getBooleanExpression(), iIfStatement.getClass().getSimpleName()+":booleanExpression")))
-        iIfStatement.setIfBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iIfStatement.getIfBlock(), iIfStatement.getClass().getSimpleName()+":ifBlock")))
-        iIfStatement.setElseBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iIfStatement.getElseBlock(), iIfStatement.getClass().getSimpleName()+":elseBlock")))
+        iIfStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iIfStatement.getBooleanExpression(), iIfStatement.getClass().getSimpleName() + ":booleanExpression")))
+        iIfStatement.setIfBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iIfStatement.getIfBlock(), iIfStatement.getClass().getSimpleName() + ":ifBlock")))
+        iIfStatement.setElseBlock(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iIfStatement.getElseBlock(), iIfStatement.getClass().getSimpleName() + ":elseBlock")))
     }
 
     @Override
     void visitExpressionStatement(ExpressionStatement iExpressionStatement) {
         iExpressionStatement.origCodeString = blackBoxTransformation.codeString(iExpressionStatement)
         super.visitExpressionStatement(iExpressionStatement)
-        iExpressionStatement.setExpression(blackBoxTransformation.transformExpression(iExpressionStatement.getExpression(), iExpressionStatement.getClass().getSimpleName()+":expression"))
+        iExpressionStatement.setExpression(blackBoxTransformation.transformExpression(iExpressionStatement.getExpression(), iExpressionStatement.getClass().getSimpleName() + ":expression"))
     }
 
     @Override
     void visitReturnStatement(ReturnStatement iReturnStatement) {
         iReturnStatement.origCodeString = blackBoxTransformation.codeString(iReturnStatement)
         super.visitReturnStatement(iReturnStatement)
-        iReturnStatement.setExpression(blackBoxTransformation.transformReturnStatementExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName()+":expression", iReturnStatement.origCodeString as String))
+        iReturnStatement.setExpression(blackBoxTransformation.transformReturnStatementExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName() + ":expression", iReturnStatement.origCodeString as String))
     }
 
     @Override
     void visitAssertStatement(AssertStatement iAssertStatement) {
         iAssertStatement.origCodeString = blackBoxTransformation.codeString(iAssertStatement)
         super.visitAssertStatement(iAssertStatement)
-        iAssertStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iAssertStatement.getBooleanExpression(), iAssertStatement.getClass().getSimpleName()+":booleanExpression")))
-        iAssertStatement.setMessageExpression(blackBoxTransformation.transformExpression(iAssertStatement.getMessageExpression(), iAssertStatement.getClass().getSimpleName()+":messageExpression"))
+        iAssertStatement.setBooleanExpression(new BooleanExpression(blackBoxTransformation.transformExpression(iAssertStatement.getBooleanExpression(), iAssertStatement.getClass().getSimpleName() + ":booleanExpression")))
+        iAssertStatement.setMessageExpression(blackBoxTransformation.transformExpression(iAssertStatement.getMessageExpression(), iAssertStatement.getClass().getSimpleName() + ":messageExpression"))
     }
 
     @Override
     void visitTryCatchFinally(TryCatchStatement iTryCatchStatement) {
         iTryCatchStatement.origCodeString = blackBoxTransformation.codeString(iTryCatchStatement)
         super.visitTryCatchFinally(iTryCatchStatement)
-        iTryCatchStatement.setTryStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iTryCatchStatement.getTryStatement(), iTryCatchStatement.getClass().getSimpleName()+":tryStatement")))
+        iTryCatchStatement.setTryStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iTryCatchStatement.getTryStatement(), iTryCatchStatement.getClass().getSimpleName() + ":tryStatement")))
         for (CatchStatement catchStatement : iTryCatchStatement.getCatchStatements()) {
-            catchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(catchStatement.getCode(), catchStatement.getClass().getSimpleName()+":code")))
+            catchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(catchStatement.getCode(), catchStatement.getClass().getSimpleName() + ":code")))
         }
-        iTryCatchStatement.setFinallyStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iTryCatchStatement.getFinallyStatement(), iTryCatchStatement.getClass().getSimpleName()+":finallyStatement")))
+        iTryCatchStatement.setFinallyStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iTryCatchStatement.getFinallyStatement(), iTryCatchStatement.getClass().getSimpleName() + ":finallyStatement")))
     }
 
     @Override
@@ -125,19 +122,19 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitSwitch(SwitchStatement iSwitchStatement) {
         iSwitchStatement.origCodeString = blackBoxTransformation.codeString(iSwitchStatement)
         super.visitSwitch(iSwitchStatement)
-        iSwitchStatement.setExpression(blackBoxTransformation.transformExpression(iSwitchStatement.getExpression(), iSwitchStatement.getClass().getSimpleName()+":expression"))
+        iSwitchStatement.setExpression(blackBoxTransformation.transformExpression(iSwitchStatement.getExpression(), iSwitchStatement.getClass().getSimpleName() + ":expression"))
         for (CaseStatement caseStatement : iSwitchStatement.getCaseStatements()) {
-            caseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(caseStatement.getCode(), caseStatement.getClass().getSimpleName()+":code")))
+            caseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(caseStatement.getCode(), caseStatement.getClass().getSimpleName() + ":code")))
         }
-        iSwitchStatement.setDefaultStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iSwitchStatement.getDefaultStatement(), iSwitchStatement.getClass().getSimpleName()+":defaultStatement")))
+        iSwitchStatement.setDefaultStatement(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iSwitchStatement.getDefaultStatement(), iSwitchStatement.getClass().getSimpleName() + ":defaultStatement")))
     }
 
     @Override
     void visitCaseStatement(CaseStatement iCaseStatement) {
         iCaseStatement.origCodeString = blackBoxTransformation.codeString(iCaseStatement)
         super.visitCaseStatement(iCaseStatement)
-        iCaseStatement.setExpression(blackBoxTransformation.transformExpression(iCaseStatement.getExpression(), iCaseStatement.getClass().getSimpleName()+":expression"))
-        iCaseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iCaseStatement.getCode(), iCaseStatement.getClass().getSimpleName()+":code")))
+        iCaseStatement.setExpression(blackBoxTransformation.transformExpression(iCaseStatement.getExpression(), iCaseStatement.getClass().getSimpleName() + ":expression"))
+        iCaseStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iCaseStatement.getCode(), iCaseStatement.getClass().getSimpleName() + ":code")))
     }
 
     @Override
@@ -158,23 +155,23 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitSynchronizedStatement(SynchronizedStatement iSynchronizedStatement) {
         iSynchronizedStatement.origCodeString = blackBoxTransformation.codeString(iSynchronizedStatement)
         super.visitSynchronizedStatement(iSynchronizedStatement)
-        iSynchronizedStatement.setExpression(blackBoxTransformation.transformExpression(iSynchronizedStatement.getExpression(), iSynchronizedStatement.getClass().getSimpleName()+":expression"))
-        iSynchronizedStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iSynchronizedStatement.getCode(), iSynchronizedStatement.getClass().getSimpleName()+":code")))
+        iSynchronizedStatement.setExpression(blackBoxTransformation.transformExpression(iSynchronizedStatement.getExpression(), iSynchronizedStatement.getClass().getSimpleName() + ":expression"))
+        iSynchronizedStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iSynchronizedStatement.getCode(), iSynchronizedStatement.getClass().getSimpleName() + ":code")))
     }
 
     @Override
     void visitThrowStatement(ThrowStatement iThrowStatement) {
         iThrowStatement.origCodeString = blackBoxTransformation.codeString(iThrowStatement)
         super.visitThrowStatement(iThrowStatement)
-        iThrowStatement.setExpression(blackBoxTransformation.transformExpression(iThrowStatement.getExpression(), iThrowStatement.getClass().getSimpleName()+":expression"))
+        iThrowStatement.setExpression(blackBoxTransformation.transformExpression(iThrowStatement.getExpression(), iThrowStatement.getClass().getSimpleName() + ":expression"))
     }
 
     @Override
     void visitMethodCallExpression(MethodCallExpression iMethodCallExpression) {
         iMethodCallExpression.origCodeString = blackBoxTransformation.codeString(iMethodCallExpression)
         super.visitMethodCallExpression(iMethodCallExpression)
-        iMethodCallExpression.setObjectExpression(blackBoxTransformation.transformExpression(iMethodCallExpression.getObjectExpression(), iMethodCallExpression.getClass().getSimpleName()+":objectExpression"))
-        iMethodCallExpression.setArguments(blackBoxTransformation.transformExpression(iMethodCallExpression.getArguments(), iMethodCallExpression.getClass().getSimpleName()+":arguments"))
+        iMethodCallExpression.setObjectExpression(blackBoxTransformation.transformExpression(iMethodCallExpression.getObjectExpression(), iMethodCallExpression.getClass().getSimpleName() + ":objectExpression"))
+        iMethodCallExpression.setArguments(blackBoxTransformation.transformExpression(iMethodCallExpression.getArguments(), iMethodCallExpression.getClass().getSimpleName() + ":arguments"))
     }
 
     @Override
@@ -236,29 +233,29 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitClosureExpression(ClosureExpression iClosureExpression) {
         iClosureExpression.origCodeString = blackBoxTransformation.codeString(iClosureExpression)
         super.visitClosureExpression(iClosureExpression)
-        iClosureExpression.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iClosureExpression.getCode(), iClosureExpression.getClass().getSimpleName()+":code")))
+        iClosureExpression.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iClosureExpression.getCode(), iClosureExpression.getClass().getSimpleName() + ":code")))
     }
 
     @Override
     void visitTupleExpression(TupleExpression iTupleExpression) {
         iTupleExpression.origCodeString = blackBoxTransformation.codeString(iTupleExpression)
         super.visitTupleExpression(iTupleExpression)
-        transformExpressionList(iTupleExpression.getExpressions(), iTupleExpression.getClass().getSimpleName()+":expressions")
+        transformExpressionList(iTupleExpression.getExpressions(), iTupleExpression.getClass().getSimpleName() + ":expressions")
     }
 
     @Override
     void visitListExpression(ListExpression iListExpression) {
         iListExpression.origCodeString = blackBoxTransformation.codeString(iListExpression)
         super.visitListExpression(iListExpression)
-        transformExpressionList(iListExpression.getExpressions(), iListExpression.getClass().getSimpleName()+":expressions")
+        transformExpressionList(iListExpression.getExpressions(), iListExpression.getClass().getSimpleName() + ":expressions")
     }
 
     @Override
     void visitArrayExpression(ArrayExpression iArrayExpression) {
         iArrayExpression.origCodeString = blackBoxTransformation.codeString(iArrayExpression)
         super.visitArrayExpression(iArrayExpression)
-        transformExpressionList(iArrayExpression.getExpressions(), iArrayExpression.getClass().getSimpleName()+":expressions")
-        transformExpressionList(iArrayExpression.getSizeExpression(), iArrayExpression.getClass().getSimpleName()+":sizeExpression")
+        transformExpressionList(iArrayExpression.getExpressions(), iArrayExpression.getClass().getSimpleName() + ":expressions")
+        transformExpressionList(iArrayExpression.getSizeExpression(), iArrayExpression.getClass().getSimpleName() + ":sizeExpression")
     }
 
     @Override
@@ -271,8 +268,8 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitMapEntryExpression(MapEntryExpression iMapEntryExpression) {
         iMapEntryExpression.origCodeString = blackBoxTransformation.codeString(iMapEntryExpression)
         super.visitMapEntryExpression(iMapEntryExpression)
-        iMapEntryExpression.setKeyExpression(blackBoxTransformation.transformExpression(iMapEntryExpression.getKeyExpression(), iMapEntryExpression.getClass().getSimpleName()+":keyExpression"))
-        iMapEntryExpression.setValueExpression(blackBoxTransformation.transformExpression(iMapEntryExpression.getValueExpression(), iMapEntryExpression.getClass().getSimpleName()+":valueExpression"))
+        iMapEntryExpression.setKeyExpression(blackBoxTransformation.transformExpression(iMapEntryExpression.getKeyExpression(), iMapEntryExpression.getClass().getSimpleName() + ":keyExpression"))
+        iMapEntryExpression.setValueExpression(blackBoxTransformation.transformExpression(iMapEntryExpression.getValueExpression(), iMapEntryExpression.getClass().getSimpleName() + ":valueExpression"))
     }
 
     @Override
@@ -372,28 +369,28 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitGStringExpression(GStringExpression iGStringExpression) {
         iGStringExpression.origCodeString = blackBoxTransformation.codeString(iGStringExpression)
         super.visitGStringExpression(iGStringExpression)
-        transformExpressionList(iGStringExpression.getValues(), iGStringExpression.getClass().getSimpleName()+":values")
+        transformExpressionList(iGStringExpression.getValues(), iGStringExpression.getClass().getSimpleName() + ":values")
     }
 
     @Override
     void visitCatchStatement(CatchStatement iCatchStatement) {
         iCatchStatement.origCodeString = blackBoxTransformation.codeString(iCatchStatement)
         super.visitCatchStatement(iCatchStatement)
-        iCatchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iCatchStatement.getCode(), iCatchStatement.getClass().getSimpleName()+":code")))
+        iCatchStatement.setCode(GeneralUtils.block(new VariableScope(), blackBoxTransformation.transformStatement(iCatchStatement.getCode(), iCatchStatement.getClass().getSimpleName() + ":code")))
     }
 
     @Override
     void visitArgumentlistExpression(ArgumentListExpression iArgumentListExpression) {
         iArgumentListExpression.origCodeString = blackBoxTransformation.codeString(iArgumentListExpression)
         super.visitArgumentlistExpression(iArgumentListExpression)
-        transformExpressionList(iArgumentListExpression.getExpressions(), iArgumentListExpression.getClass().getSimpleName()+":expressions")
+        transformExpressionList(iArgumentListExpression.getExpressions(), iArgumentListExpression.getClass().getSimpleName() + ":expressions")
     }
 
     @Override
     void visitClosureListExpression(ClosureListExpression iClosureListExpression) {
         iClosureListExpression.origCodeString = blackBoxTransformation.codeString(iClosureListExpression)
         super.visitClosureListExpression(iClosureListExpression)
-        transformExpressionList(iClosureListExpression.getExpressions(), iClosureListExpression.getClass().getSimpleName()+":expressions")
+        transformExpressionList(iClosureListExpression.getExpressions(), iClosureListExpression.getClass().getSimpleName() + ":expressions")
     }
 
 }

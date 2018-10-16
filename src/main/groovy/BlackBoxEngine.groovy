@@ -237,4 +237,20 @@ class BlackBoxEngine {
         ((XMLMethodNode)astNode).setException(xmlException)
     }
 
+    static BlackBoxLevel getRuntimeBlackBoxLevel(String iClassName, String iMethodName) {
+        //todo
+        return BlackBoxLevel.NONE
+    }
+
+    static Object runClosureAsPerRuntimeBlackBoxLevel(String iClassName, String iMethodName, Map<String, Closure> iClosureMap) {
+        BlackBoxLevel blackBoxLevelRuntime = getRuntimeBlackBoxLevel(iClassName, iMethodName)
+        if (iClosureMap.containsKey("automaticBlackBoxClosureForLevel" + blackBoxLevelRuntime.value().toString())) {
+            return iClosureMap.get("automaticBlackBoxClosureForLevel" + blackBoxLevelRuntime.value().toString()).call()
+        } else if (iClosureMap.containsKey("automaticBlackBoxClosureForLevel" + BlackBoxLevel.NONE.value().toString())) {
+            return iClosureMap.get("automaticBlackBoxClosureForLevel" + BlackBoxLevel.NONE.value().toString()).call()
+        } else {
+            throw new Exception("Unable to find method closure for execution.")
+        }
+    }
+
 }

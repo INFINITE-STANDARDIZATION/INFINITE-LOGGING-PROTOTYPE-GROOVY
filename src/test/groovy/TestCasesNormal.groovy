@@ -275,7 +275,7 @@ class TestCasesNormal {
 
     ////////////////////////////
 
-    //@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    //@BlackBox(blackBoxLevels = BlackBoxLevel.EXPRESSION)
     void misc() {
         int wwww = 0
         while (wwww < 3) {

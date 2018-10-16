@@ -24,7 +24,6 @@ import org.codehaus.groovy.transform.sc.ListOfExpressionsExpression
 @Slf4j
 class BlackBoxTransformation extends AbstractASTTransformation {
 
-    BlackBoxVisitor blackBoxVisitor
     AnnotationNode annotationNode
     BlackBoxLevel blackBoxLevel
 
@@ -39,13 +38,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             Thread.currentThread().setName("Compilation_$className.$methodName")
             annotationNode = iAstNodeArray[0] as AnnotationNode
             blackBoxLevel = getBlackBoxLevel(annotationNode)
-            blackBoxVisitor = new BlackBoxVisitor(blackBoxLevel, annotationNode, this)
-            BlockStatement decoratedMethodNodeBlockStatement = new BlockStatement()
-            decoratedMethodNodeBlockStatement.setSourcePosition(methodNode.getCode())
-            decoratedMethodNodeBlockStatement.copyNodeMetaData(methodNode.getCode())
-            decoratedMethodNodeBlockStatement.addStatement(createLoggerDeclaration())
-            decoratedMethodNodeBlockStatement.addStatement(transformMethod(methodNode))
-            methodNode.setCode(decoratedMethodNodeBlockStatement)
+            methodNode.setCode(transformMethod(methodNode))
             new VariableScopeVisitor(sourceUnit, true).visitClass(methodNode.getDeclaringClass())//<<<<<<<<<
             log.debug(codeString(methodNode.getCode()))
         } catch (Throwable throwable) {
@@ -56,9 +49,13 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     static BlackBoxLevel getBlackBoxLevel(ASTNode iAnnotationNode) {
         AnnotationNode annotationNode = iAnnotationNode as AnnotationNode
-        PropertyExpression propertyExpression = annotationNode.getMember("blackBoxLevel") as PropertyExpression
-        ConstantExpression constantExpression = propertyExpression.getProperty() as ConstantExpression
-        return constantExpression.getValue() as BlackBoxLevel
+        Expression memberExpression = annotationNode.getMember("blackBoxLevel")
+        if (memberExpression instanceof PropertyExpression) {
+            ConstantExpression constantExpression = memberExpression.getProperty() as ConstantExpression
+            return constantExpression.getValue() as BlackBoxLevel
+        } else {
+            throw new Exception("Unsupported annotation member expression class: " + memberExpression.getClass().getCanonicalName())
+        }
     }
 
     Expression transformReturnStatementExpression(Expression iExpression, String iSourceNodeName, String iReturnStatementCodeString) {
@@ -115,40 +112,42 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     }
 
     private Statement transformMethod(MethodNode iMethodNode) {
-                   Parameter[] methodParameters = iMethodNode.getParameters()
-            BlockStatement decoratedBlockStatement = new BlockStatement()
-            BlockStatement tryBlock = new BlockStatement()
-            tryBlock.addStatement(iMethodNode.getCode())
-            Statement finallyBlock
-            if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-                decoratedBlockStatement.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
-                    iMethodNode.getDeclaringClass().getNameWithoutPackage()
-                }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
-                    iMethodNode.getName()
-                }" %s , ${
-                    iMethodNode.getColumnNumber()
-                }, ${
-                    iMethodNode.getLastColumnNumber()
-                }, ${
-                    iMethodNode.getLineNumber()
-                }, ${
-                    iMethodNode.getLastLineNumber()
-                })""", methodParameters))
-                finallyBlock = text2statement("automaticBlackBox.executionClose()")
-                decoratedBlockStatement.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
-                decoratedBlockStatement.copyNodeMetaData(iMethodNode.getCode())
-                decoratedBlockStatement.setSourcePosition(iMethodNode.getCode())
-                iMethodNode.getCode().visit(blackBoxVisitor)//<<<<<<<<<<<<<<VISIT<<<<<
-                return decoratedBlockStatement
-            } else if (blackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
-                finallyBlock = new EmptyStatement()
-                decoratedBlockStatement.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
-                decoratedBlockStatement.copyNodeMetaData(iMethodNode.getCode())
-                decoratedBlockStatement.setSourcePosition(iMethodNode.getCode())
-                return decoratedBlockStatement
-            } else {
-                return iMethodNode.getCode()
-            }
+        Parameter[] methodParameters = iMethodNode.getParameters()
+        BlockStatement transformedMethodCode = new BlockStatement()
+        BlockStatement tryBlock = new BlockStatement()
+        tryBlock.addStatement(iMethodNode.getCode())
+        Statement finallyBlock
+        if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
+            transformedMethodCode.addStatement(createLoggerDeclaration())
+            transformedMethodCode.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
+                iMethodNode.getDeclaringClass().getNameWithoutPackage()
+            }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
+                iMethodNode.getName()
+            }" %s , ${
+                iMethodNode.getColumnNumber()
+            }, ${
+                iMethodNode.getLastColumnNumber()
+            }, ${
+                iMethodNode.getLineNumber()
+            }, ${
+                iMethodNode.getLastLineNumber()
+            })""", methodParameters))
+            finallyBlock = text2statement("automaticBlackBox.executionClose()")
+            transformedMethodCode.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
+            transformedMethodCode.copyNodeMetaData(iMethodNode.getCode())
+            transformedMethodCode.setSourcePosition(iMethodNode.getCode())
+            iMethodNode.getCode().visit(new BlackBoxVisitor(this, blackBoxLevel))//<<<<<<<<<<<<<<VISIT<<<<<
+            return transformedMethodCode
+        } else if (blackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
+            transformedMethodCode.addStatement(createLoggerDeclaration())
+            finallyBlock = new EmptyStatement()
+            transformedMethodCode.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
+            transformedMethodCode.copyNodeMetaData(iMethodNode.getCode())
+            transformedMethodCode.setSourcePosition(iMethodNode.getCode())
+            return transformedMethodCode
+        } else {
+            return iMethodNode.getCode()
+        }
     }
 
     private static Statement createLoggerDeclaration() {
