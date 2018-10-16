@@ -3,31 +3,31 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitPostfixExpressionNoneLevel() {
     int z = 1
     z++
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitPostfixExpressionMethodErrorLevel() {
     int z = 1
     z++
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitPostfixExpressionMethodLevel() {
     int z = 1
     z++
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitPostfixExpressionStatementLevel() {
     int z = 1
     z++
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitPostfixExpressionExpressionLevel() {
     int z = 1
     z++

@@ -3,27 +3,27 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitNotExpressionNoneLevel() {
     if (!true) false
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitNotExpressionMethodErrorLevel() {
     if (!true) false
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitNotExpressionMethodLevel() {
     if (!true) false
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitNotExpressionStatementLevel() {
     if (!true) false
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitNotExpressionExpressionLevel() {
     if (!true) false
 }

@@ -3,7 +3,7 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitSynchronizedStatementNoneLevel() {
     Object object = new Object()
     synchronized (object) {
@@ -12,7 +12,7 @@ void visitSynchronizedStatementNoneLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitSynchronizedStatementMethodErrorLevel() {
     Object object = new Object()
     synchronized (object) {
@@ -21,7 +21,7 @@ void visitSynchronizedStatementMethodErrorLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitSynchronizedStatementMethodLevel() {
     Object object = new Object()
     synchronized (object) {
@@ -30,7 +30,7 @@ void visitSynchronizedStatementMethodLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitSynchronizedStatementStatementLevel() {
     Object object = new Object()
     synchronized (object) {
@@ -39,7 +39,7 @@ void visitSynchronizedStatementStatementLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitSynchronizedStatementExpressionLevel() {
     Object object = new Object()
     synchronized (object) {

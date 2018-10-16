@@ -3,35 +3,35 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitClosureExpressionNoneLevel() {
     Closure c = {
         System.out.println("z")
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitClosureExpressionMethodErrorLevel() {
     Closure c = {
         System.out.println("z")
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitClosureExpressionMethodLevel() {
     Closure c = {
         System.out.println("z")
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitClosureExpressionStatementLevel() {
     Closure c = {
         System.out.println("z")
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitClosureExpressionExpressionLevel() {
     Closure c = {
         System.out.println("z")

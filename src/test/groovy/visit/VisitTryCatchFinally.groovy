@@ -3,7 +3,7 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitTryCatchFinallyNoneLevel() {
     try {
         System.out.println("test")
@@ -17,7 +17,7 @@ void visitTryCatchFinallyNoneLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitTryCatchFinallyMethodErrorLevel() {
     try {
         System.out.println("test")
@@ -31,7 +31,7 @@ void visitTryCatchFinallyMethodErrorLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitTryCatchFinallyMethodLevel() {
     try {
         System.out.println("test")
@@ -45,7 +45,7 @@ void visitTryCatchFinallyMethodLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitTryCatchFinallyStatementLevel() {
     try {
         System.out.println("test")
@@ -59,7 +59,7 @@ void visitTryCatchFinallyStatementLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitTryCatchFinallyExpressionLevel() {
     try {
         System.out.println("test")

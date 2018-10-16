@@ -3,7 +3,7 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitContinueStatementNoneLevel() {
     for (z in [1,2,3,4]) {
         System.out.println("Test")
@@ -14,7 +14,7 @@ void visitContinueStatementNoneLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitContinueStatementMethodErrorLevel() {
     for (z in [1,2,3,4]) {
         System.out.println("Test")
@@ -25,7 +25,7 @@ void visitContinueStatementMethodErrorLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitContinueStatementMethodLevel() {
     for (z in [1,2,3,4]) {
         System.out.println("Test")
@@ -36,7 +36,7 @@ void visitContinueStatementMethodLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitContinueStatementStatementLevel() {
     for (z in [1,2,3,4]) {
         System.out.println("Test")
@@ -47,7 +47,7 @@ void visitContinueStatementStatementLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitContinueStatementExpressionLevel() {
     for (z in [1,2,3,4]) {
         System.out.println("Test")

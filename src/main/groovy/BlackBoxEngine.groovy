@@ -10,13 +10,11 @@ import javax.xml.bind.Marshaller
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
-@Slf4j
 class BlackBoxEngine {
 
     public static ThreadLocal blackBoxEngineThreadLocal = new ThreadLocal()
 
     XMLASTNode astNode
-
 
     BlackBoxEngine() {
         addShutdownHook {
@@ -26,39 +24,22 @@ class BlackBoxEngine {
                 }
             }
         }
-        /*String blackBoxConfFileName = System.getProperty("blackBoxConfFileName")
-        if (blackBoxConfFileName == null) {
-            System.out.println("Prop missing")
-            blackBoxConfFileName = "resources/BlackBox.config"
-        }
-        blackBoxEngine.configObject = new ConfigSlurper().parse(new File(blackBoxConfFileName).toURI().toURL())*/
     }
 
     static BlackBoxEngine getInstance() {
         BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class) as BlackBoxEngine
         if (blackBoxEngine == null) {
             XMLASTNode.getMetaClass().parentAstNode = null
-            blackBoxEngine = new BlackBoxEngine()
+            Throwable.getMetaClass().isLoggedByBlackBox = null
+            if (System.getProperty("blackBox.mode") == BlackBoxMode.SEQUENTIAL.value()) {
+                blackBoxEngine = new BlackBoxEngineSequential()
+            } else {
+                blackBoxEngine = new BlackBoxEngineEmergency()
+            }
             blackBoxEngineThreadLocal.set(blackBoxEngine)
         }
         return blackBoxEngine
     }
-
-    /*
-    static tagOpen(XMLExecution iXmlExecution) {
-        String iTagString = "<"
-        switch (iXmlExecution) {
-            case XMLLog: iTagString += """log xmlns="https://i-t.io/logging/groovy/2_x_x/Main" """; break
-            case XMLMethodNode: iTagString += """event xsi:type="MethodExecution" """; break
-            case XMLStatement: iTagString += """event xsi:type="StatementExecution" """; break
-            case XMLExpression: iTagString += """event xsi:type=ExpressionEvaluation" """; break
-        }
-        for (k in iXmlExecution.getProperties().keySet()) {
-            iTagString += """ $k="${XmlUtil.escapeXml(iXmlExecution.getProperties().get(k).toString())}" """
-        }
-        iTagString += ">"
-        log.debug(iTagString)
-    }*/
 
     static XMLGregorianCalendar getXMLGregorianCalendar(Date date = new Date()) {
         GregorianCalendar lGregorianCalendar = new GregorianCalendar()
@@ -84,24 +65,12 @@ class BlackBoxEngine {
     }
 
     Object expressionEvaluation(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName) {
-        XMLExpression xmlExpression = new XMLExpression()
-        xmlExpression.parentAstNode = astNode
-        xmlExpression.setAstNodeList(new XMLASTNodeList())
-        xmlExpression.setStartDateTime(getXMLGregorianCalendar())
-        xmlExpression.setExpressionClassName(iExpressionName)
-        xmlExpression.setRestoredScriptCode(iRestoredScriptCode)
-        xmlExpression.setColumnNumber(iColumnNumber as BigInteger)
-        xmlExpression.setLastColumnNumber(iLastColumnNumber as BigInteger)
-        xmlExpression.setLineNumber(iLineNumber as BigInteger)
-        xmlExpression.setLastLineNumber(iLastLineNumber as BigInteger)
-        xmlExpression.setSourceNodeName(iNodeSourceName)
-        astNode.getAstNodeList().getAstNode().add(xmlExpression)
-        astNode = xmlExpression
+        expressionExecutionOpen(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iNodeSourceName)
         try {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpression.setExpressionValue(evaluationResult.toString())
+                astNode.setExpressionValue(evaluationResult.toString())
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -163,16 +132,6 @@ class BlackBoxEngine {
     }
 
     void executionClose() {
-        if (astNode.parentAstNode == null) {
-            JAXBContext lJAXBContext = JAXBContext.newInstance(astNode.getClass())
-            Marshaller marshaller = lJAXBContext.createMarshaller()
-            marshaller.setProperty(Marshaller.JAXB_FORMATTED_OUTPUT, Boolean.TRUE)
-            StringWriter stringWriter = new StringWriter()
-            marshaller.marshal(new ObjectFactory().createRootAstNode(astNode), stringWriter)
-            String xmlString = stringWriter.toString()
-            log.debug(xmlString)
-        }
-        //todo: remove from tree
         astNode = astNode.parentAstNode
     }
 
@@ -214,6 +173,7 @@ class BlackBoxEngine {
     }
 
     void exception(Throwable throwable) {
+        //todo: log only 1 time
         XMLException xmlException = new XMLException()
         xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
         xmlException.setExceptionDateTime(getXMLGregorianCalendar())

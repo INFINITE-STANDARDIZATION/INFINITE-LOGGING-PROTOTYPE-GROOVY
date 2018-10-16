@@ -3,27 +3,27 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
 void visitGStringExpressionNoneLevel() {
     System.out.println("test gstring ${new Date()} this is test ${Integer.valueOf("123").toString()}")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
 void visitGStringExpressionMethodErrorLevel() {
     System.out.println("test gstring ${new Date()} this is test ${Integer.valueOf("123").toString()}")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
 void visitGStringExpressionMethodLevel() {
     System.out.println("test gstring ${new Date()} this is test ${Integer.valueOf("123").toString()}")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
 void visitGStringExpressionStatementLevel() {
     System.out.println("test gstring ${new Date()} this is test ${Integer.valueOf("123").toString()}")
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
 void visitGStringExpressionExpressionLevel() {
     System.out.println("test gstring ${new Date()} this is test ${Integer.valueOf("123").toString()}")
 }
