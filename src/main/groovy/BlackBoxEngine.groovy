@@ -17,7 +17,6 @@ class BlackBoxEngine {
 
     XMLASTNode astNode
 
-    final static NOARGSMAP = new HashMap<String, Object>()
 
     BlackBoxEngine() {
         addShutdownHook {
@@ -106,7 +105,6 @@ class BlackBoxEngine {
             }
             return evaluationResult
         } catch (Throwable throwable) {
-            exception(throwable)
             throw throwable
         } finally {
             executionClose()
@@ -129,7 +127,16 @@ class BlackBoxEngine {
         astNode = xmlStatement
     }
 
-    void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Map<String, Object> methodArgumentMap, Integer iColumnNumber = null, Integer iLastColumnNumber = null, Integer iLineNumber = null, Integer iLastLineNumber = null) {
+    void methodExecutionOpen(
+            String iClassSimpleName,
+            String iPackageName,
+            String iMethodName,
+            Integer iColumnNumber,
+            Integer iLastColumnNumber,
+            Integer iLineNumber,
+            Integer iLastLineNumber,
+            Map<String, Object> methodArgumentMap
+    ) {
         //todo: "implicit" error logging - print log only when method has status failed, and save arguments
         if (astNode == null) {
             initRootAstNode()

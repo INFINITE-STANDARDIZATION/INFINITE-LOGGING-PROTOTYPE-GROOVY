@@ -3,27 +3,27 @@ package groovy.visit
 import groovy.BlackBox
 import groovy.BlackBoxLevel
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitClassExpressionNoneLevel() {
     System.getProperty("z")
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitClassExpressionMethodErrorLevel() {
     System.getProperty("z")
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitClassExpressionMethodLevel() {
     System.getProperty("z")
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitClassExpressionStatementLevel() {
     System.getProperty("z")
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitClassExpressionExpressionLevel() {
     System.getProperty("z")
 }

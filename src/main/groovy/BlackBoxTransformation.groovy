@@ -38,7 +38,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             Thread.currentThread().setName("Compilation_$className.$methodName")
             annotationNode = iAstNodeArray[0] as AnnotationNode
             blackBoxLevel = getBlackBoxLevel(annotationNode)
-            methodNode.setCode(transformMethod(methodNode))
+            transformMethod(methodNode)
             new VariableScopeVisitor(sourceUnit, true).visitClass(methodNode.getDeclaringClass())//<<<<<<<<<
             log.debug(codeString(methodNode.getCode()))
         } catch (Throwable throwable) {
@@ -81,69 +81,78 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return methodCallExpression
     }
 
-    private Statement transformMethod(MethodNode iMethodNode) {
-        Parameter[] methodParameters = iMethodNode.getParameters()
-        BlockStatement transformedMethodCode = new BlockStatement()
-        BlockStatement tryBlock = new BlockStatement()
-        tryBlock.addStatement(iMethodNode.getCode())
-        Statement finallyBlock
-        if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-            transformedMethodCode.addStatement(createLoggerDeclaration())
-            transformedMethodCode.addStatement(text2statement("""automaticBlackBox.methodExecutionOpen("${
-                iMethodNode.getDeclaringClass().getNameWithoutPackage()
-            }", "${iMethodNode.getDeclaringClass().getPackageName()}", "${
-                iMethodNode.getName()
-            }" %s , ${
-                iMethodNode.getColumnNumber()
-            }, ${
-                iMethodNode.getLastColumnNumber()
-            }, ${
-                iMethodNode.getLineNumber()
-            }, ${
-                iMethodNode.getLastLineNumber()
-            })""", methodParameters))
-            finallyBlock = text2statement("automaticBlackBox.executionClose()")
-            transformedMethodCode.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
-            transformedMethodCode.copyNodeMetaData(iMethodNode.getCode())
-            transformedMethodCode.setSourcePosition(iMethodNode.getCode())
-            iMethodNode.getCode().visit(new BlackBoxVisitor(this, blackBoxLevel))//<<<<<<<<<<<<<<VISIT<<<<<
-            return transformedMethodCode
-        } else if (blackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
-            transformedMethodCode.addStatement(createLoggerDeclaration())
-            finallyBlock = new EmptyStatement()
-            transformedMethodCode.addStatement(createTryCatch(tryBlock, finallyBlock, methodParameters))
-            transformedMethodCode.copyNodeMetaData(iMethodNode.getCode())
-            transformedMethodCode.setSourcePosition(iMethodNode.getCode())
-            return transformedMethodCode
-        } else {
-            return iMethodNode.getCode()
+    private void transformMethod(MethodNode iMethodNode) {
+        List<MapEntryExpression> argumentMapEntryExpressionList = new ArrayList<>()
+        if (methodArgumentsPresent(iMethodNode.getParameters())) {
+            for (parameter in iMethodNode.getParameters()) {
+                argumentMapEntryExpressionList.add(new MapEntryExpression(GeneralUtils.constX(parameter.getName()), GeneralUtils.varX(parameter.getName())))
+            }
         }
-    }
-
-    private static Statement createLoggerDeclaration() {
-        //see also: https://issues.apache.org/jira/browse/GROOVY-4927
-        return GeneralUtils.declS(
-                GeneralUtils.varX(
-                        "automaticBlackBox",
-                        ClassHelper.make(BlackBoxEngine.class)
-                ),
+        Statement blackBoxDeclaration = GeneralUtils.declS(
+                GeneralUtils.varX("automaticBlackBox", ClassHelper.make(BlackBoxEngine.class)),
+                GeneralUtils.callX(ClassHelper.make(BlackBoxEngine.class), "getInstance")
+        )
+        Statement methodExecutionOpen = new ExpressionStatement(
                 GeneralUtils.callX(
-                        new ConstructorCallExpression(
-                                new ClassNode(BlackBoxEngine),
-                                new ArgumentListExpression()
-                        ),
-                        "getInstance"
+                        GeneralUtils.varX("automaticBlackBox"),
+                        "methodExecutionOpen",
+                        GeneralUtils.args(
+                                GeneralUtils.constX(iMethodNode.getDeclaringClass().getNameWithoutPackage()),
+                                GeneralUtils.constX(iMethodNode.getDeclaringClass().getPackageName()),
+                                GeneralUtils.constX(iMethodNode.getName()),
+                                GeneralUtils.constX(iMethodNode.getColumnNumber()),
+                                GeneralUtils.constX(iMethodNode.getLastColumnNumber()),
+                                GeneralUtils.constX(iMethodNode.getLineNumber()),
+                                GeneralUtils.constX(iMethodNode.getLastLineNumber()),
+                                new MapExpression(
+                                        argumentMapEntryExpressionList
+                                )
+                        )
                 )
         )
-    }
-
-    private TryCatchStatement createTryCatch(BlockStatement iMainBlock, Statement iFinallyBlock, Parameter[] iParameters) {
-        TryCatchStatement tryCatchStatement = new TryCatchStatement(iMainBlock, iFinallyBlock)
-        BlockStatement throwBlock = new BlockStatement()
-        throwBlock.addStatement(text2statement("automaticBlackBox.exception(automaticThrowable)", iParameters))
-        throwBlock.addStatement(createThrowStatement())
-        tryCatchStatement.addCatch(GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "automaticThrowable"), throwBlock))
-        return tryCatchStatement
+        Statement logException = new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "exception", GeneralUtils.args(GeneralUtils.varX("automaticThrowable"))
+        )
+        )
+        if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
+            iMethodNode.getCode().visit(new BlackBoxVisitor(this, blackBoxLevel))//<<<<<<<<<<<<<<VISIT<<<<<
+            iMethodNode.setCode(
+                    GeneralUtils.block(
+                            blackBoxDeclaration,
+                            methodExecutionOpen,
+                            {
+                                TryCatchStatement tryCatchStatement = new TryCatchStatement(
+                                        iMethodNode.getCode(),
+                                        new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "executionClose"))
+                                )
+                                tryCatchStatement.addCatch(
+                                        GeneralUtils.catchS(GeneralUtils.param(ClassHelper.make(Throwable.class), "automaticThrowable"), GeneralUtils.block(logException, createThrowStatement()))
+                                )
+                                return tryCatchStatement
+                            }.call() as TryCatchStatement
+                    )
+            )
+        } else if (blackBoxLevel == BlackBoxLevel.METHOD_ERROR) {
+            iMethodNode.setCode(
+                    GeneralUtils.block(
+                            {
+                                TryCatchStatement tryCatchStatement = new TryCatchStatement(iMethodNode.getCode(), EmptyStatement.INSTANCE)
+                                tryCatchStatement.addCatch(
+                                        GeneralUtils.catchS(
+                                                GeneralUtils.param(ClassHelper.make(Throwable.class), "automaticThrowable"),
+                                                GeneralUtils.block(
+                                                        blackBoxDeclaration,
+                                                        methodExecutionOpen,
+                                                        logException,
+                                                        new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "executionClose")),
+                                                        createThrowStatement()
+                                                )
+                                        )
+                                )
+                                return tryCatchStatement
+                            }.call() as TryCatchStatement
+                    )
+            )
+        }
     }
 
     private Statement createThrowStatement() {
@@ -152,18 +161,8 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return throwStatement
     }
 
-    static Statement text2statement(String iCodeText, Parameter[] iParameters) {
-        String statementCode
-        if (methodArgumentsPresent(iParameters)) {
-            ArrayList<String> serializedParameters = new ArrayList<String>()
-            for (parameter in iParameters) {
-                serializedParameters.add(""""${parameter.getName()}": ${parameter.getName()}""")
-            }
-            statementCode = String.format(iCodeText, """, [${serializedParameters.join(",")}]""")
-        } else {
-            statementCode = String.format(iCodeText, ", automaticBlackBox.NOARGSMAP")
-        }
-        List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, statementCode)
+    static Statement text2statement(String iCodeText) {
+        List<ASTNode> resultingStatements = new AstBuilder().buildFromString(CompilePhase.SEMANTIC_ANALYSIS, true, iCodeText)
         return resultingStatements.first() as Statement
     }
 

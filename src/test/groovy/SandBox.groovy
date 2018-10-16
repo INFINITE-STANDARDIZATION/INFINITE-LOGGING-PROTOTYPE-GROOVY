@@ -7,13 +7,14 @@ import org.codehaus.groovy.ast.tools.GeneralUtils
 class SandBox {
 
     static void main(String[] args) {
-        new SandBox().visitArgumentlistExpressionExpressionLevel()
+        new SandBox().visitArgumentlistExpressionExpressionLevel(1,2,3)
     }
 
 
     @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
-    void visitArgumentlistExpressionExpressionLevel() {
-        tst(1,2,3)
+    void visitArgumentlistExpressionExpressionLevel(def a, def b, def c) {
+        tst(a,b,c)
+        1/0
     }
 
     void tst(def a, def b, def c) {
@@ -21,6 +22,5 @@ class SandBox {
     }
 
     void z() {
-
     }
 }
