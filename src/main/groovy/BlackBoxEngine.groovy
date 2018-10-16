@@ -4,7 +4,6 @@ package groovy
 import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
-import org.codehaus.groovy.ast.ASTNode
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller
@@ -18,15 +17,7 @@ class BlackBoxEngine {
 
     XMLASTNode astNode
 
-    ConfigObject configObject
-
-    BlackBoxVisitor blackBoxVisitor
-
     final static NOARGSMAP = new HashMap<String, Object>()
-
-
-    final String PCLASSSIMPLENAME = this.getClass().getSimpleName()
-    final String PPACKAGENAME = this.getClass().getPackage().getName()
 
     BlackBoxEngine() {
         addShutdownHook {
@@ -54,7 +45,6 @@ class BlackBoxEngine {
         return blackBoxEngine
     }
 
-
     /*
     static tagOpen(XMLExecution iXmlExecution) {
         String iTagString = "<"
@@ -76,23 +66,6 @@ class BlackBoxEngine {
         lGregorianCalendar.setTime(date)
         XMLGregorianCalendar lXMLGregorianCalendar = DatatypeFactory.newInstance().newXMLGregorianCalendar(lGregorianCalendar)
         return lXMLGregorianCalendar
-    }
-
-    Object handleReturn(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Closure iClosure, String iNodeSourceName, String iReturnStatementCodeString) {
-        XMLASTNode astNodeForChecking = astNode
-        while (!(astNodeForChecking instanceof XMLMethodNode || (astNodeForChecking instanceof XMLExpression && astNodeForChecking.getExpressionClassName() == "ClosureExpression"))) {
-            astNodeForChecking = astNodeForChecking.parentAstNode
-        }
-        Object expressionResult = expressionEvaluation(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iClosure,iNodeSourceName)
-        switch (astNodeForChecking) {
-            case XMLMethodNode:
-                astNodeForChecking.setMethodResult(TraceSerializer.createXMLTraceTrace(expressionResult, iReturnStatementCodeString))
-                break
-            case XMLExpression:
-                astNodeForChecking.setExpressionResult(expressionResult.toString())
-                break
-        }
-        return expressionResult
     }
 
     void expressionExecutionOpen(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
@@ -129,7 +102,7 @@ class BlackBoxEngine {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                xmlExpression.setExpressionResult(evaluationResult.toString())
+                xmlExpression.setExpressionValue(evaluationResult.toString())
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -145,7 +118,7 @@ class BlackBoxEngine {
         xmlStatement.parentAstNode = astNode
         xmlStatement.setAstNodeList(new XMLASTNodeList())
         xmlStatement.setStartDateTime(getXMLGregorianCalendar())
-        xmlStatement.setStatementName(iStatementName)
+        xmlStatement.setStatementClassName(iStatementName)
         xmlStatement.setRestoredScriptCode(iRestoredScriptCode)
         xmlStatement.setColumnNumber(iColumnNumber as BigInteger)
         xmlStatement.setLastColumnNumber(iLastColumnNumber as BigInteger)
@@ -171,10 +144,13 @@ class BlackBoxEngine {
         xmlMethodNode.setLastColumnNumber(iLastColumnNumber as BigInteger)
         xmlMethodNode.setLineNumber(iLineNumber as BigInteger)
         xmlMethodNode.setLastLineNumber(iLastLineNumber as BigInteger)
-        xmlMethodNode.setArgumentTraceList(new XMLTraceList())
+        xmlMethodNode.setArgumentList(new XMLArgumentList())
         for (methodArgumentName in methodArgumentMap.keySet()) {
-            XMLTrace xMLTrace = TraceSerializer.createXMLTraceTrace(methodArgumentMap.get(methodArgumentName), methodArgumentName)
-            xmlMethodNode.getArgumentTraceList().getTrace().add(xMLTrace)
+            XMLArgument xmlArgument = new XMLArgument()
+            xmlArgument.setArgumentClassName(methodArgumentMap.get(methodArgumentName).getClass().getCanonicalName())
+            xmlArgument.setArgumentName(methodArgumentName)
+            xmlArgument.setArgumentValue(methodArgumentMap.get(methodArgumentName).toString())
+            xmlMethodNode.getArgumentList().getArgument().add(xmlArgument)
         }
         astNode.getAstNodeList().getAstNode().add(xmlMethodNode)
         astNode = xmlMethodNode
@@ -203,12 +179,12 @@ class BlackBoxEngine {
                 }
                 break
             case "BreakStatement":
-                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement", "SwitchStatement"].contains(astNode.getStatementName()))) {
+                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement", "SwitchStatement"].contains(astNode.getStatementClassName()))) {
                     executionClose()
                 }
                 break
             case "ContinueStatement":
-                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement"].contains(astNode.getStatementName()))) {
+                while (!(astNode instanceof XMLStatement && ["DoWhileStatement", "ForStatement", "WhileStatement"].contains(astNode.getStatementClassName()))) {
                     executionClose()
                 }
                 break
@@ -221,9 +197,11 @@ class BlackBoxEngine {
         astNode.setStartDateTime(getXMLGregorianCalendar())
     }
 
-    Object methodResult(String iResultVariableName, Object iResult) {
-        XMLTrace xMLTraceResult = TraceSerializer.createXMLTraceTrace(iResult, iResultVariableName)
-        astNode.setMethodResult(xMLTraceResult)
+    Object methodResult(Object iResult) {
+        XMLMethodResult xmlMethodResult = new XMLMethodResult()
+        xmlMethodResult.setMethodResultVale(iResult.toString())
+        xmlMethodResult.setMethodResultClassName(iResult.getClass().getCanonicalName())
+        ((XMLMethodNode) astNode).setMethodResult(xmlMethodResult)
         return iResult
     }
 
@@ -234,23 +212,7 @@ class BlackBoxEngine {
         while (!(astNode instanceof XMLMethodNode)) {
             executionClose()
         }
-        ((XMLMethodNode)astNode).setException(xmlException)
-    }
-
-    static BlackBoxLevel getRuntimeBlackBoxLevel(String iClassName, String iMethodName) {
-        //todo
-        return BlackBoxLevel.NONE
-    }
-
-    static Object runClosureAsPerRuntimeBlackBoxLevel(String iClassName, String iMethodName, Map<String, Closure> iClosureMap) {
-        BlackBoxLevel blackBoxLevelRuntime = getRuntimeBlackBoxLevel(iClassName, iMethodName)
-        if (iClosureMap.containsKey("automaticBlackBoxClosureForLevel" + blackBoxLevelRuntime.value().toString())) {
-            return iClosureMap.get("automaticBlackBoxClosureForLevel" + blackBoxLevelRuntime.value().toString()).call()
-        } else if (iClosureMap.containsKey("automaticBlackBoxClosureForLevel" + BlackBoxLevel.NONE.value().toString())) {
-            return iClosureMap.get("automaticBlackBoxClosureForLevel" + BlackBoxLevel.NONE.value().toString()).call()
-        } else {
-            throw new Exception("Unable to find method closure for execution.")
-        }
+        ((XMLMethodNode) astNode).setException(xmlException)
     }
 
 }

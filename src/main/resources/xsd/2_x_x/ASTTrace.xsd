@@ -3,10 +3,10 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="Trace.xsd"/>
+    <xs:include schemaLocation="Argument.xsd"/>
     <xs:complexType name="ASTTrace">
         <xs:complexContent>
-            <xs:extension base="Trace">
+            <xs:extension base="Argument">
                 <xs:attribute use="required" name="lineNumber" type="xs:integer"/>
                 <xs:attribute use="required" name="columnNumber" type="xs:integer"/>
                 <xs:attribute use="required" name="lastLineNumber" type="xs:integer"/>

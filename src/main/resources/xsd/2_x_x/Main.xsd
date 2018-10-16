@@ -5,17 +5,15 @@
         xmlns:xs="http://www.w3.org/2001/XMLSchema"
         elementFormDefault="qualified">
     <!---->
-    <xs:include schemaLocation="Trace.xsd"/>
+    <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="MethodNode.xsd"/>
-    <xs:include schemaLocation="ListTrace.xsd"/>
-    <xs:include schemaLocation="Trace.xsd"/>
+    <xs:include schemaLocation="MethodResult.xsd"/>
+    <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="Exception.xsd"/>
-    <xs:include schemaLocation="TraceList.xsd"/>
-    <xs:include schemaLocation="MapEntry.xsd"/>
+    <xs:include schemaLocation="ArgumentList.xsd"/>
     <xs:include schemaLocation="Expression.xsd"/>
     <xs:include schemaLocation="ASTTrace.xsd"/>
     <xs:include schemaLocation="ASTNode.xsd"/>
-    <xs:include schemaLocation="MapTrace.xsd"/>
     <xs:include schemaLocation="ASTNodeList.xsd"/>
     <xs:include schemaLocation="Statement.xsd"/>
     <!---->

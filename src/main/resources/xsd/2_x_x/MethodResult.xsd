@@ -3,10 +3,10 @@
            targetNamespace="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
-    <xs:include schemaLocation="Trace.xsd"/>
-    <xs:complexType name="TraceList">
+    <xs:complexType name="MethodResult">
         <xs:sequence>
-            <xs:element name="trace" type="Trace" minOccurs="0" maxOccurs="unbounded"/>
+            <xs:element name="methodResultVale" type="xs:string"/>
         </xs:sequence>
+        <xs:attribute use="required" name="methodResultClassName" type="xs:string"/>
     </xs:complexType>
 </xs:schema>

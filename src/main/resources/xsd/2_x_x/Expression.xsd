@@ -4,15 +4,15 @@
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="ASTNode.xsd"/>
-    <xs:include schemaLocation="Trace.xsd"/>
+    <xs:include schemaLocation="Argument.xsd"/>
     <xs:complexType name="Expression">
         <xs:complexContent>
             <xs:extension base="ASTNode">
                 <xs:sequence>
-                    <xs:element name="expressionResult" type="xs:string"/>
+                    <xs:element name="expressionValue" type="xs:string"/>
                 </xs:sequence>
                 <xs:attribute name="expressionClassName" type="xs:string" use="required"/>
-                <xs:attribute name="resultClassName" type="xs:string"/>
+                <xs:attribute name="expressionValueClassName" type="xs:string"/>
             </xs:extension>
         </xs:complexContent>
     </xs:complexType>

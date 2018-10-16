@@ -89,7 +89,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitReturnStatement(ReturnStatement iReturnStatement) {
         iReturnStatement.origCodeString = blackBoxTransformation.codeString(iReturnStatement)
         super.visitReturnStatement(iReturnStatement)
-        iReturnStatement.setExpression(blackBoxTransformation.transformReturnStatementExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName() + ":expression", iReturnStatement.origCodeString as String))
+        iReturnStatement.setExpression(blackBoxTransformation.transformExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName() + ":expression"))
     }
 
     @Override
@@ -141,7 +141,6 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitBreakStatement(BreakStatement iBreakStatement) {
         iBreakStatement.origCodeString = blackBoxTransformation.codeString(iBreakStatement)
         super.visitBreakStatement(iBreakStatement)
-
     }
 
     @Override

@@ -58,36 +58,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
-    Expression transformReturnStatementExpression(Expression iExpression, String iSourceNodeName, String iReturnStatementCodeString) {
-        if (iExpression == null || iExpression instanceof EmptyExpression) {
-            return iExpression
-        } else if (blackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value()) {
-            return iExpression
-        } else {
-            ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
-            closureExpression.setVariableScope(new VariableScope())
-            MethodCallExpression methodCallExpression = GeneralUtils.callX(
-                    GeneralUtils.varX("automaticBlackBox"),
-                    "handleReturn",
-                    GeneralUtils.args(
-                            GeneralUtils.constX(iExpression.getClass().getSimpleName()),
-                            GeneralUtils.constX(iExpression.origCodeString),
-                            GeneralUtils.constX(iExpression.getColumnNumber()),
-                            GeneralUtils.constX(iExpression.getLastColumnNumber()),
-                            GeneralUtils.constX(iExpression.getLineNumber()),
-                            GeneralUtils.constX(iExpression.getLastLineNumber()),
-                            closureExpression,
-                            GeneralUtils.constX(iSourceNodeName),
-                            GeneralUtils.constX(iReturnStatementCodeString)
-                    )
-            )
-            methodCallExpression.copyNodeMetaData(iExpression)
-            methodCallExpression.setSourcePosition(iExpression)
-            methodCallExpression.isTransformed = true
-            return methodCallExpression
-        }
-    }
-
     private static MethodCallExpression wrapExpressionIntoMethodCallExpression(Expression iExpression, iSourceNodeName) {
         ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
         closureExpression.setVariableScope(new VariableScope())

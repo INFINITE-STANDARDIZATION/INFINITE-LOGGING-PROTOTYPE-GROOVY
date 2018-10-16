@@ -4,7 +4,7 @@
            xmlns="https://i-t.io/logging/groovy/2_x_x/Main"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="ASTNodeList.xsd"/>
-    <xs:include schemaLocation="TraceList.xsd"/>
+    <xs:include schemaLocation="ArgumentList.xsd"/>
     <xs:complexType name="ASTNode">
         <xs:sequence>
             <xs:element name="restoredScriptCode" type="xs:string"/>
