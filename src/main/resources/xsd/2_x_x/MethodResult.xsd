@@ -5,7 +5,7 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:complexType name="MethodResult">
         <xs:sequence>
-            <xs:element name="methodResultVale" type="xs:string"/>
+            <xs:element name="methodResultValue" type="xs:string"/>
         </xs:sequence>
         <xs:attribute use="required" name="methodResultClassName" type="xs:string"/>
     </xs:complexType>

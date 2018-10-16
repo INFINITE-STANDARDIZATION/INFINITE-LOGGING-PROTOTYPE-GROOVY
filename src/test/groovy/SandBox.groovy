@@ -12,9 +12,9 @@ class SandBox {
 
 
     @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
-    void visitArgumentlistExpressionExpressionLevel(def a, def b, def c) {
+    String visitArgumentlistExpressionExpressionLevel(def a, def b, def c) {
         tst(a,b,c)
-        1/0
+        return "zzzz"
     }
 
     void tst(def a, def b, def c) {

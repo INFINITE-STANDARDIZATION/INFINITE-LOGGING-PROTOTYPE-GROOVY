@@ -110,10 +110,9 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                         )
                 )
         )
-        Statement logException = new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "exception", GeneralUtils.args(GeneralUtils.varX("automaticThrowable"))
-        )
-        )
+        Statement logException = new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "exception", GeneralUtils.args(GeneralUtils.varX("automaticThrowable"))))
         if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
+
             iMethodNode.getCode().visit(new BlackBoxVisitor(this, blackBoxLevel))//<<<<<<<<<<<<<<VISIT<<<<<
             iMethodNode.setCode(
                     GeneralUtils.block(
@@ -121,7 +120,17 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                             methodExecutionOpen,
                             {
                                 TryCatchStatement tryCatchStatement = new TryCatchStatement(
-                                        iMethodNode.getCode(),
+                                        {
+                                            if (iMethodNode.isVoidMethod()) {
+                                                return iMethodNode.getCode()
+                                            } else {
+                                                return new ExpressionStatement(GeneralUtils.callX(
+                                                        GeneralUtils.varX("automaticBlackBox"),
+                                                        "executeMethod",
+                                                        GeneralUtils.args(GeneralUtils.closureX(iMethodNode.getCode()))
+                                                ))
+                                            }
+                                        }.call() as Statement,
                                         new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "executionClose"))
                                 )
                                 tryCatchStatement.addCatch(

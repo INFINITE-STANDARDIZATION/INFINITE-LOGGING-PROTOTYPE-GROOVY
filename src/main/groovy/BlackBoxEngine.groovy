@@ -137,7 +137,6 @@ class BlackBoxEngine {
             Integer iLastLineNumber,
             Map<String, Object> methodArgumentMap
     ) {
-        //todo: "implicit" error logging - print log only when method has status failed, and save arguments
         if (astNode == null) {
             initRootAstNode()
         }
@@ -173,6 +172,7 @@ class BlackBoxEngine {
             String xmlString = stringWriter.toString()
             log.debug(xmlString)
         }
+        //todo: remove from tree
         astNode = astNode.parentAstNode
     }
 
@@ -204,12 +204,13 @@ class BlackBoxEngine {
         astNode.setStartDateTime(getXMLGregorianCalendar())
     }
 
-    Object methodResult(Object iResult) {
+    Object executeMethod(Closure iMethodClosure) {
+        Object methodResult = iMethodClosure.call()
         XMLMethodResult xmlMethodResult = new XMLMethodResult()
-        xmlMethodResult.setMethodResultVale(iResult.toString())
-        xmlMethodResult.setMethodResultClassName(iResult.getClass().getCanonicalName())
+        xmlMethodResult.setMethodResultValue(methodResult.toString())
+        xmlMethodResult.setMethodResultClassName(methodResult.getClass().getCanonicalName())
         ((XMLMethodNode) astNode).setMethodResult(xmlMethodResult)
-        return iResult
+        return methodResult
     }
 
     void exception(Throwable throwable) {
