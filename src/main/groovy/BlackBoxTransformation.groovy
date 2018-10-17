@@ -37,7 +37,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
             String className = methodNode.getDeclaringClass().getNameWithoutPackage()
             Thread.currentThread().setName("Compilation_$className.$methodName")
             annotationNode = iAstNodeArray[0] as AnnotationNode
-            blackBoxLevel = getBlackBoxLevel(annotationNode)
+            blackBoxLevel = getBlackBoxLevel(annotationNode, methodName)
             transformMethod(methodNode)
             new VariableScopeVisitor(sourceUnit, true).visitClass(methodNode.getDeclaringClass())//<<<<<<<<<
             log.debug(codeString(methodNode.getCode()))
@@ -47,14 +47,14 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
-    static BlackBoxLevel getBlackBoxLevel(ASTNode iAnnotationNode) {
+    static BlackBoxLevel getBlackBoxLevel(ASTNode iAnnotationNode, String iMethodName) {
         AnnotationNode annotationNode = iAnnotationNode as AnnotationNode
         Expression memberExpression = annotationNode.getMember("blackBoxLevel")
         if (memberExpression instanceof PropertyExpression) {
             ConstantExpression constantExpression = memberExpression.getProperty() as ConstantExpression
             return constantExpression.getValue() as BlackBoxLevel
         } else {
-            throw new Exception("Unsupported annotation member expression class: " + memberExpression.getClass().getCanonicalName())
+            throw new Exception("Unsupported annotation member expression class: " + memberExpression.getClass().getCanonicalName() + " for method " + iMethodName)
         }
     }
 
@@ -218,7 +218,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         if (blackBoxLevel.value() < BlackBoxLevel.STATEMENT.value() || iStatement instanceof BlockStatement || iStatement instanceof ExpressionStatement) {
             return iStatement
         }
-        if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement) {
+        if (iStatement instanceof ReturnStatement || iStatement instanceof ContinueStatement || iStatement instanceof BreakStatement || iStatement instanceof ThrowStatement) {
             return transformControlStatement(iStatement, iSourceNodeName)
         }
         BlockStatement blockStatement = GeneralUtils.block(new VariableScope())

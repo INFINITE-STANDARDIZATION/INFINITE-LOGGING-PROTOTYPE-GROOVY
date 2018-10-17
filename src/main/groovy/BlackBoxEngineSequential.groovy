@@ -101,6 +101,13 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
                     depth--
                     log("""</methodResult>""")
                 }
+                if (astNode.getException() != null) {
+                    log("""<exception exceptionDateTime="${astNode.getException().getExceptionDateTime().toXMLFormat()}">""")
+                    depth++
+                    log("""<exceptionStackTrace>${XmlUtil.escapeXml(astNode.getException().getExceptionStackTrace())}</exceptionStackTrace>""")
+                    depth--
+                    log("""</exception>""")
+                }
                 depth--
                 log("""</astNode>""")
                 break

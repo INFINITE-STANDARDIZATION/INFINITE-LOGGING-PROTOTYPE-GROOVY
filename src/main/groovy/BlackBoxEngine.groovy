@@ -156,6 +156,11 @@ class BlackBoxEngine {
                     executionClose()
                 }
                 break
+            case "ThrowStatement":
+                while (!(astNode instanceof XMLMethodNode || (astNode instanceof XMLStatement && astNode.getStatementClassName() == "TryCatchStatement"))) {
+                    executionClose()
+                }
+                break
         }
     }
 
