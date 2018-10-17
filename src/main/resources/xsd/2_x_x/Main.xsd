@@ -7,7 +7,7 @@
     <!---->
     <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="MethodNode.xsd"/>
-    <xs:include schemaLocation="MethodResult.xsd"/>
+    <xs:include schemaLocation="Object.xsd"/>
     <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="Exception.xsd"/>
     <xs:include schemaLocation="ArgumentList.xsd"/>

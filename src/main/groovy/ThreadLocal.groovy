@@ -6,28 +6,14 @@ import java.util.concurrent.ConcurrentHashMap
 
 class ThreadLocal {
 
-    public static ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Object>> objectsByThreadByClass = new ConcurrentHashMap<Thread, ConcurrentHashMap<Class, Object>>()
-
-    static void remove(Class iClass){
-        if (objectsByThreadByClass.get(Thread.currentThread()) != null) {
-            objectsByThreadByClass.get(Thread.currentThread()).remove(iClass)
-            if (objectsByThreadByClass.get(Thread.currentThread()).size() == 0) {
-                objectsByThreadByClass.remove(Thread.currentThread())
-            }
-        }
-    }
+    public static ConcurrentHashMap<Thread, Object> objectsByThread = new ConcurrentHashMap<Thread, Object>()
 
     static void set(Object iObject){
-        if (objectsByThreadByClass.get(Thread.currentThread()) != null) {
-            objectsByThreadByClass.get(Thread.currentThread()).put(iObject.getClass(), iObject)
-        } else {
-            objectsByThreadByClass.put(Thread.currentThread(), new ConcurrentHashMap<Class, Object>())
-            objectsByThreadByClass.get(Thread.currentThread()).put(iObject.getClass(), iObject)
-        }
+        objectsByThread.put(Thread.currentThread(), iObject)
     }
 
-    static Object get(Class iClass){
-        objectsByThreadByClass.get(Thread.currentThread())?.get(iClass)
+    static Object get(){
+        objectsByThread.get(Thread.currentThread())
     }
 
 }

@@ -4,7 +4,7 @@ import groovy.BlackBox
 import groovy.BlackBoxLevel
 
 
-//@BlackBox(blackBoxMode = BlackBoxLevel.NONE)
+@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitWhileLoopNoneLevel() {
     int z = 0
     while (z < 3) {
@@ -13,7 +13,7 @@ void visitWhileLoopNoneLevel() {
     }
 }
 
-//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD_ERROR)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitWhileLoopMethodErrorLevel() {
     int z = 0
     while (z < 3) {
@@ -22,7 +22,7 @@ void visitWhileLoopMethodErrorLevel() {
     }
 }
 
-//@BlackBox(blackBoxMode = BlackBoxLevel.METHOD)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitWhileLoopMethodLevel() {
     int z = 0
     while (z < 3) {
@@ -31,7 +31,7 @@ void visitWhileLoopMethodLevel() {
     }
 }
 
-//@BlackBox(blackBoxMode = BlackBoxLevel.STATEMENT)
+@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitWhileLoopStatementLevel() {
     int z = 0
     while (z < 3) {
@@ -40,7 +40,7 @@ void visitWhileLoopStatementLevel() {
     }
 }
 
-//@BlackBox(blackBoxMode = BlackBoxLevel.EXPRESSION)
+@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitWhileLoopExpressionLevel() {
     int z = 0
     while (z < 3) {

@@ -9,6 +9,7 @@ class SandBox {
     static void main(String[] args) {
         //System.setProperty("blackBox.mode", BlackBoxMode.EMERGENCY.value())
         System.setProperty("blackBox.mode", BlackBoxMode.SEQUENTIAL.value())
+        //System.setProperty("blackBox.mode", BlackBoxMode.HIERARCHICAL.value())
         new SandBox().visitArgumentlistExpressionExpressionLevel(1,2,3)
     }
 

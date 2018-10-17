@@ -112,7 +112,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         )
         Statement logException = new ExpressionStatement(GeneralUtils.callX(GeneralUtils.varX("automaticBlackBox"), "exception", GeneralUtils.args(GeneralUtils.varX("automaticThrowable"))))
         if (blackBoxLevel.value() >= BlackBoxLevel.METHOD.value()) {
-
+            //todo: serialize parameters before method execution
             iMethodNode.getCode().visit(new BlackBoxVisitor(this, blackBoxLevel))//<<<<<<<<<<<<<<VISIT<<<<<
             iMethodNode.setCode(
                     GeneralUtils.block(
@@ -181,7 +181,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return stringWriter.getBuffer().toString().replace("\$", "")
     }
 
-    private static final Boolean methodArgumentsPresent(Object iArgs) {
+    static final Boolean methodArgumentsPresent(Object iArgs) {
         if (iArgs != null) {
             if (iArgs instanceof Collection) {
                 return iArgs.size() > 0

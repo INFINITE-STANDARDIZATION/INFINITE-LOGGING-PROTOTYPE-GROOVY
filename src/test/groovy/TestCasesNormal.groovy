@@ -9,6 +9,9 @@ class TestCasesNormal {
     }
 
     void run() {
+        //System.setProperty("blackBox.mode", BlackBoxMode.EMERGENCY.value())
+        System.setProperty("blackBox.mode", BlackBoxMode.SEQUENTIAL.value())
+        //System.setProperty("blackBox.mode", BlackBoxMode.HIERARCHICAL.value())
         BlackBoxEngine.getInstance().initRootAstNode() //just removing compilation data from log
         misc()
         new VisitBlockStatement().visitBlockStatementNoneLevel()

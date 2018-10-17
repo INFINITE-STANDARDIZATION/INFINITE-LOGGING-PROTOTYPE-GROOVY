@@ -1,12 +1,9 @@
 package groovy
 
 
-import groovy.util.logging.Slf4j
 import infinite_logging.prototype.groovy.*
 import org.apache.commons.lang3.exception.ExceptionUtils
 
-import javax.xml.bind.JAXBContext
-import javax.xml.bind.Marshaller
 import javax.xml.datatype.DatatypeFactory
 import javax.xml.datatype.XMLGregorianCalendar
 
@@ -18,21 +15,23 @@ class BlackBoxEngine {
 
     BlackBoxEngine() {
         addShutdownHook {
-            synchronized (this) {
-                while (astNode != null) {
-                    executionClose()
-                }
+            //todo: possibly need to set this thread name to parent thread name for proper sifting appender file selection
+            Thread.currentThread().setName("BlackBoxEngine Shutdown Hook" + Thread.currentThread().getId())
+            while (astNode != null) {
+                executionClose()
             }
         }
     }
 
     static BlackBoxEngine getInstance() {
-        BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get(BlackBoxEngine.class) as BlackBoxEngine
+        BlackBoxEngine blackBoxEngine = blackBoxEngineThreadLocal.get() as BlackBoxEngine
         if (blackBoxEngine == null) {
             XMLASTNode.getMetaClass().parentAstNode = null
             Throwable.getMetaClass().isLoggedByBlackBox = null
             if (System.getProperty("blackBox.mode") == BlackBoxMode.SEQUENTIAL.value()) {
                 blackBoxEngine = new BlackBoxEngineSequential()
+            } else if (System.getProperty("blackBox.mode") == BlackBoxMode.HIERARCHICAL.value()) {
+                blackBoxEngine = new BlackBoxEngineHierarchical()
             } else {
                 blackBoxEngine = new BlackBoxEngineEmergency()
             }
@@ -70,7 +69,10 @@ class BlackBoxEngine {
             Object evaluationResult = iClosure.call()
             //Avoid logging empty results such as for void method call expressions
             if (evaluationResult != null) {
-                astNode.setExpressionValue(evaluationResult.toString())
+                XMLObject xmlObject = new XMLObject()
+                xmlObject.setClassName(evaluationResult.getClass().getCanonicalName())
+                xmlObject.setValue(evaluationResult.toString())
+                astNode.setExpressionValue(xmlObject)
             }
             return evaluationResult
         } catch (Throwable throwable) {
@@ -165,9 +167,9 @@ class BlackBoxEngine {
 
     Object executeMethod(Closure iMethodClosure) {
         Object methodResult = iMethodClosure.call()
-        XMLMethodResult xmlMethodResult = new XMLMethodResult()
-        xmlMethodResult.setMethodResultValue(methodResult.toString())
-        xmlMethodResult.setMethodResultClassName(methodResult.getClass().getCanonicalName())
+        XMLObject xmlMethodResult = new XMLObject()
+        xmlMethodResult.setValue(methodResult.toString())
+        xmlMethodResult.setClassName(methodResult.getClass().getCanonicalName())
         ((XMLMethodNode) astNode).setMethodResult(xmlMethodResult)
         return methodResult
     }

@@ -3,7 +3,8 @@ package groovy
 enum BlackBoxMode {
 
     SEQUENTIAL("SEQUENTIAL"),
-    EMERGENCY("EMERGENCY");
+    EMERGENCY("EMERGENCY"),
+    HIERARCHICAL("HIERARCHICAL");
 
     private final String blackBoxMode
 
