@@ -16,7 +16,7 @@ class BlackBoxEngine {
     BlackBoxEngine() {
         addShutdownHook {
             //todo: possibly need to set this thread name to parent thread name for proper sifting appender file selection
-            Thread.currentThread().setName("BlackBoxEngine Shutdown Hook" + Thread.currentThread().getId())
+            Thread.currentThread().setName("BlackBoxEngine Shutdown Hook " + Thread.currentThread().getId())
             while (astNode != null) {
                 executionClose()
             }
@@ -181,6 +181,7 @@ class BlackBoxEngine {
 
     void exception(Throwable throwable) {
         //todo: log only 1 time
+        //todo: log.error for exceptions
         XMLException xmlException = new XMLException()
         xmlException.setExceptionStackTrace(ExceptionUtils.getStackTrace(throwable))
         xmlException.setExceptionDateTime(getXMLGregorianCalendar())
