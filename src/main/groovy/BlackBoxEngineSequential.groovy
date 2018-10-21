@@ -14,6 +14,8 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
 
     Integer depth = 0
 
+    //todo: remove closed ast nodes
+
     private String getPad() {
         if (depth >= 0) {
             return "".padRight(depth*4)

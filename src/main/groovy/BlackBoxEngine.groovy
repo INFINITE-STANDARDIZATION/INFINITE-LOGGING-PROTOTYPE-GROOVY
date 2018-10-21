@@ -16,6 +16,7 @@ class BlackBoxEngine {
     BlackBoxEngine() {
         addShutdownHook {
             //todo: possibly need to set this thread name to parent thread name for proper sifting appender file selection
+            //todo: org.codehaus.groovy.syntax.RuntimeParserException: Cannot use return statement with an expression on a method that returns void
             Thread.currentThread().setName("BlackBoxEngine Shutdown Hook " + Thread.currentThread().getId())
             while (astNode != null) {
                 executionClose()
@@ -137,7 +138,7 @@ class BlackBoxEngine {
         astNode = astNode.parentAstNode
     }
 
-    void handleControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
+    void preprocessControlStatement(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
         statementExecutionOpen(iStatementName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iNodeSourceName)
         executionClose()
         switch (iStatementName) {

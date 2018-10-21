@@ -197,7 +197,7 @@ class BlackBoxTransformation extends AbstractASTTransformation {
 
     private static BlockStatement transformControlStatement(Statement iStatement, String iSourceNodeName) {
         BlockStatement blockStatement = GeneralUtils.block(new VariableScope())
-        blockStatement.addStatement(text2statement("""automaticBlackBox.handleControlStatement("${
+        blockStatement.addStatement(text2statement("""automaticBlackBox.preprocessControlStatement("${
             iStatement.getClass().getSimpleName()
         }", \"\"\"${iStatement.origCodeString}\"\"\", ${iStatement.getColumnNumber()}, ${
             iStatement.getLastColumnNumber()

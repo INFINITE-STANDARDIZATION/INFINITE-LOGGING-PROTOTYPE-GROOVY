@@ -89,7 +89,9 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     void visitReturnStatement(ReturnStatement iReturnStatement) {
         iReturnStatement.origCodeString = blackBoxTransformation.codeString(iReturnStatement)
         super.visitReturnStatement(iReturnStatement)
-        iReturnStatement.setExpression(blackBoxTransformation.transformExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName() + ":expression"))
+        if (!iReturnStatement.isReturningNullOrVoid()) {
+            iReturnStatement.setExpression(blackBoxTransformation.transformExpression(iReturnStatement.getExpression(), iReturnStatement.getClass().getSimpleName() + ":expression"))
+        }
     }
 
     @Override
