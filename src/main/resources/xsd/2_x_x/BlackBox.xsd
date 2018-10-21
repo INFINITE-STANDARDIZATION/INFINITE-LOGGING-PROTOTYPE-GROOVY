@@ -4,6 +4,14 @@
         xmlns="https://i-t.io/blackbox/groovy/2_x_x/Main"
         xmlns:xs="http://www.w3.org/2001/XMLSchema"
         elementFormDefault="qualified">
+    <xs:annotation>
+        <xs:documentation>
+            Todo: migrate to Asciidoc
+            This file is:
+                - Entry point for JAXB class generation task
+                - Main XSD for BlackBox XML log files
+        </xs:documentation>
+    </xs:annotation>
     <!---->
     <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="MethodNode.xsd"/>
@@ -17,5 +25,11 @@
     <xs:include schemaLocation="ASTNodeList.xsd"/>
     <xs:include schemaLocation="Statement.xsd"/>
     <!---->
-    <xs:element name="rootAstNode" type="ASTNode"/>
+    <xs:element name="rootAstNode" type="ASTNode">
+        <xs:annotation>
+            <xs:documentation>
+                This is the root element in the log
+            </xs:documentation>
+        </xs:annotation>
+    </xs:element>
 </xs:schema>

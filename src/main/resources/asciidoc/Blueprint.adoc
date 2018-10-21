@@ -1,0 +1,110 @@
+= Infinite Logging ∞ BlackBox
+Anton Pryamostanov <https://github.com/apryamostanov[@apryamostanov]>
+:description: This Blueprint defines the solution to automatically generate Groovy syntactic-level logging code and inject it into User code during the compilation resulting in a possibility to produce and review exhaustive application runtime data in a form of XML files with XSD based on simplified Groovy AST class model - by the means of implementing and using a Groovy Annotation.
+:keywords: Groovy, AST, annotation, transformation, logging, code injection, syntactic logging
+:page-description: {description}
+:page-keywords: {keywords}
+:page-layout: docs
+ifndef::env-site[]
+:toc: left
+:icons: font
+:idprefix:
+:idseparator: -
+:sectanchors:
+:source-highlighter: highlightjs
+endif::[]
+:experimental:
+:mdash: &#8212;
+:language: asciidoc
+:source-language: {language}
+:table-caption!:
+:example-caption!:
+:figure-caption!:
+:imagesdir: ../images
+:includedir: _includes
+:toc: left
+// Refs
+:blackbox-blueprint: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint
+:blackbox-code: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX
+
+////
+TODO:
+
+////
+
+== Purpose
+{description}
+
+== Introduction
+Logging is one of the most important parts of modern applications. +
+Its significance only increases in case of:
+
+* Financial environments (consider PCI-DSS and sensitive data logging)
+* Cloud environments (consider logging to Logstash)
+* GDPR
+
+While at a level of Logging engines (Log4J, JUL, Logback -> SLF4J) things are good, there is a theoretical gap in terms of approach and best practices for logging implementation as well as its automation. +
+In short there is *no set of rules* helping programmers to understand:
+
+* *What* to log
+* *When* to log
+* *Where* to place logging code in the application
+* *How* log can be used on Test and Production environments
+* *Why* spend time writing logging code
+
+When it comes to automation of logging in Java and Groovy, the things are getting really bad:
+
+* Groovy provides annotations (@Slf4j, etc) to inject log variable declaration and initialization
+
+That saves just a couple of lines of code. +
+But there is *no real way to inject the actual logging code into the application*. +
+Programmers have to manually place lines with logging leading to *unwanted results*:
+
+* Cluttering the real code base with logging code
+* Unstructured and cluttered log output
+* Chances of misplacing the logging code and missing important output
+* Increase of development time and costs
+
+As an Open Source community we are taking an initiative to come up with a new Logging solution addressing these limitations and supporting many additional features. +
+The *solution helps* to address the below key scenarios:
+
+* *What* to log:
+** 4 levels of logging:
+*** Method exceptions (with arguments causing exception)
+*** Method execution (with method arguments, result and exceptions)
+*** Statements execution within the method (all Groovy statements are supported)
+*** Expression execution and evaluation (all Groovy expressions are supported) - with the resulting object value and class
+** Compile-time metadata:
+*** Line numbers
+*** Code snippets
+* *When* to log
+** 2 operational modes are supported:
+*** *Sequential* real-time - *an alternative to using Debugger*.
+There are many situations when it is easier to run a program - and then to read the hierarchical execution output like in above example to identify bugs or understand why specific branch of AST has been run. With the Debugger it will take a lot of time by manually putting Breakpoints and Watches.
+*** *Emergency* - suitable for using on *Production* - when Unhandled exception happens - the whole AST route with all runtime data (method Arguments, method results, expression values and associated meta data (line numbers, etc)) - is printed up to the place where exception has been encountered. This acts an alternative to Memory dump, with a difference that such trace has retrospective data (not only that last memory snapshot).
+* *Where* to place logging code in the application
+** Simply add @BlackBox annotation to the method - and the job is done. No need to clutter the actual code with logging lines.
+* *How* log can be used on Test and Production environments
+** Issue investigation & debugging
+** Performance profiling and optimization
+** Statistics
+** Monitoring
+* *Why* spend time writing logging code
+** No more time needed to be wasted e.g. on finding which specific "return" statement returned by placing logging or using debugger
+
+=== Key Features
+==== Compilation stage
+===== Log code injection
+====== Injection levels
+==== Compilation
+===== Operating modes
+====== Emergency
+====== Real-time sequential
+== Principles
+== Solution architecture
+== Risks
+=== Performance
+=== Security
+== Usage
+=== In the code
+=== During the runtime
