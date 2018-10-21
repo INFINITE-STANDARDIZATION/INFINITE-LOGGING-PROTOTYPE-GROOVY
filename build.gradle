@@ -77,7 +77,7 @@ task jaxb(){
         jaxbTargetDir.mkdirs()
         ant.taskdef(name: 'xjc', classname: 'org.jvnet.jaxb2_commons.xjc.XJC2Task', classpath: configurations.jaxb.asPath)
         ant.jaxbTargetDir = jaxbTargetDir
-        ant.xjc(destdir: '${jaxbTargetDir}', package: 'infinite_logging.prototype.groovy', schema:'src/main/resources/xsd/2_x_x/BlackBox.xsd', binding:'src/main/resources/xjb/2_x_x/BlackBox.xjb', extension:'true'){
+        ant.xjc(destdir: '${jaxbTargetDir}', package: 'io.infinite.blackbox.generated', schema:'src/main/resources/xsd/2_x_x/BlackBox.xsd', binding:'src/main/resources/xjb/2_x_x/BlackBox.xjb', extension:'true'){
             arg(value: "-Xannotate")
         }
     }
@@ -87,13 +87,13 @@ sourceSets {
 
     main {
         groovy {
-            srcDirs = ['src/main', 'generated']
+            srcDirs = ['src/main/groovy', 'generated']
         }
     }
 
     test {
         groovy {
-            srcDirs = ['src/test']
+            srcDirs = ['src/test/groovy']
         }
     }
 }

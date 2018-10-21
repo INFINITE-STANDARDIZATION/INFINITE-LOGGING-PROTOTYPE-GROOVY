@@ -1,7 +1,7 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 import groovy.util.logging.Slf4j
-import infinite_logging.prototype.groovy.ObjectFactory
+import io.infinite.blackbox.generated.ObjectFactory
 
 import javax.xml.bind.JAXBContext
 import javax.xml.bind.Marshaller

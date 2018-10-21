@@ -1,4 +1,4 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 import org.codehaus.groovy.transform.GroovyASTTransformationClass
 
@@ -9,7 +9,7 @@ import java.lang.annotation.Target
 
 @Target([ElementType.METHOD, ElementType.CONSTRUCTOR])
 @Retention(RetentionPolicy.RUNTIME)
-@GroovyASTTransformationClass("groovy.io.infinite.blackbox.BlackBoxTransformation")
+@GroovyASTTransformationClass("io.infinite.blackbox.BlackBoxTransformation")
 @interface BlackBox {
     BlackBoxLevel blackBoxLevel() default BlackBoxLevel.METHOD
 }

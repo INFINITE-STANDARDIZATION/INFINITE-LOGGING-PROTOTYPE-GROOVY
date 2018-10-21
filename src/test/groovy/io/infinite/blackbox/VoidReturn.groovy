@@ -1,7 +1,7 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
-import groovy.io.infinite.blackbox.BlackBox
-import groovy.io.infinite.blackbox.BlackBoxLevel
+import io.infinite.blackbox.BlackBox
+import io.infinite.blackbox.BlackBoxLevel
 
 class VoidReturn implements Runnable {
 

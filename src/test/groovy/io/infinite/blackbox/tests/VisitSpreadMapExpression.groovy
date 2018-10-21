@@ -1,7 +1,7 @@
-package groovy.io.infinite.blackbox.tests
+package io.infinite.blackbox.tests
 
-import groovy.io.infinite.blackbox.BlackBox
-import groovy.io.infinite.blackbox.BlackBoxLevel
+import io.infinite.blackbox.BlackBox
+import io.infinite.blackbox.BlackBoxLevel
 
 @BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitSpreadMapExpressionNoneLevel() {

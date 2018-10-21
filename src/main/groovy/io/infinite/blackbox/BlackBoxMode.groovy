@@ -1,4 +1,4 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 enum BlackBoxMode {
 

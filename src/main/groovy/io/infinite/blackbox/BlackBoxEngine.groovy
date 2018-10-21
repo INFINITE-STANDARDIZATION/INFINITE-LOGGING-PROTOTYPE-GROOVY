@@ -1,7 +1,7 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 
-import infinite_logging.prototype.groovy.*
+import io.infinite.blackbox.generated.*
 import org.apache.commons.lang3.exception.ExceptionUtils
 
 import javax.xml.datatype.DatatypeFactory

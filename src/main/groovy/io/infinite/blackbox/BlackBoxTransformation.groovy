@@ -1,4 +1,4 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 import groovy.inspect.swingui.AstNodeToScriptVisitor
 import groovy.transform.ToString

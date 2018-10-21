@@ -1,11 +1,11 @@
-package groovy.io.infinite.blackbox
+package io.infinite.blackbox
 
 import groovy.util.logging.Slf4j
 import groovy.xml.XmlUtil
-import infinite_logging.prototype.groovy.XMLArgument
-import infinite_logging.prototype.groovy.XMLExpression
-import infinite_logging.prototype.groovy.XMLMethodNode
-import infinite_logging.prototype.groovy.XMLStatement
+import io.infinite.blackbox.generated.XMLArgument
+import io.infinite.blackbox.generated.XMLExpression
+import io.infinite.blackbox.generated.XMLMethodNode
+import io.infinite.blackbox.generated.XMLStatement
 
 @Slf4j
 class BlackBoxEngineSequential extends BlackBoxEngine {
