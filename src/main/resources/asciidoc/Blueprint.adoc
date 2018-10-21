@@ -70,10 +70,10 @@ The *solution helps* to address the below key scenarios:
 
 * *What* to log:
 ** 4 levels of logging:
-*** Method exceptions (with arguments causing exception)
-*** Method execution (with method arguments, result and exceptions)
-*** Statements execution within the method (all Groovy statements are supported)
-*** Expression execution and evaluation (all Groovy expressions are supported) - with the resulting object value and class
+*** 1 - Method exceptions (with arguments causing exception)
+*** 2 - Method execution (with method arguments, result and exceptions)
+*** 3 - Statements execution within the method (all Groovy statements are supported)
+*** 4 - Expression execution and evaluation (all Groovy expressions are supported) - with the resulting object value and class
 ** Compile-time metadata:
 *** Line numbers
 *** Code snippets
@@ -88,7 +88,11 @@ There are many situations when it is easier to run a program - and then to read 
 ** Issue investigation & debugging
 ** Performance profiling and optimization
 ** Statistics
+** Analytics
 ** Monitoring
+** Telemetry
+** Uploading to Logstash
+** Applying XSLT to XML
 * *Why* spend time writing logging code
 ** No more time needed to be wasted e.g. on finding which specific "return" statement returned by placing logging or using debugger
 
