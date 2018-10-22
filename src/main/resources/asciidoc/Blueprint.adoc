@@ -575,6 +575,73 @@ Expression transformations happen for BlackBox level "Expression". +
 Due to current AST limitations (see https://issues.apache.org/jira/browse/GROOVY-8834) and syntax/semantics it is not possible to directly replace each and every expression with a wrapper. +
 Therefore the expression transformation follows the rules in the below table:
 
+[cols=",a,a"]
+|===
+|Condition |Transformation |Comments
+
+|Null expression
+|No transformation
+|
+
+|EmptyExpression
+|No transformation
+|
+
+|MapEntryExpression
+|No transformation
+|Synthetic expression added by Groovy compiler; not possible to be replaced (it evaluates into key value pair)
+
+|ArgumentListExpression
+|Synthetic expression added by Groovy compiler; not possible to be replaced (it evaluates into list of objects)
+|
+
+|DeclarationExpression
+|Transformed into ListOfExpressionsExpression:
+
+* Call to expressionExecutionOpen
+* Transformed declaration expression (only right expression transformed as per this table recursively).
+* Call to executionClose
+|
+
+* Left expression is never transformed (this is *declaration*!)
+* Right expression is transformed.
+* Usage of ListOfExpressionsExpression is a hack
+** it works in similar way to BlockStatement - however such usage was not in the initial design of Groovy AST.
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+
+|Null expression
+|No transformation
+|===
+
 == Solution architecture
 
 === Groovy class model
