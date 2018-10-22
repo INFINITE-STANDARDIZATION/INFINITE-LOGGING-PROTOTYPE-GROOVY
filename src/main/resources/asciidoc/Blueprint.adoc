@@ -95,7 +95,11 @@ There are many situations when it is easier to run a program - and then to read 
 ** Uploading to Logstash
 ** Applying XSLT to XML
 * *Why* spend time writing logging code
-** No more time needs to be wasted e.g. on finding which specific "return" statement returned by placing logging or using debugger
+** No more time needs to be wasted e.g. on:
+
+====
+Finding which specific "return" statement returned by placing logging or using debugger.
+====
 
 === Key Features
 ==== Code writing stage
@@ -376,7 +380,12 @@ From the above output we can easily track what methods are being called with whi
 
 ====== Emergency
 This mode is useful for *production* usage providing details only in case when unhandled exception occurs. +
-In this mode the logging code injected during compilation phase (as per BlackBox level values defined during writing the code) is executed and the results are *accumulated in RAM*. +
+
+IMPORTANT: In this mode BlackBox remains *silent* and does not produce any logging debug output unless exception is encountered. +
+Output is printed only in case when exception is encountered. +
+Printed output is only relevant to encountered exception. Irrelevant data is not printed.
+
+In this mode the logging code injected during compilation phase (as per BlackBox level values defined during writing the code) is executed and the results are *accumulated in RAM without printing the output*. +
 *Successful* completed AST execution results are *discarded* from RAM.
 In case when *exception* occurs - those AST execution in RAM that are incomplete (in progress) at the time of exception encouter - are sent to Logback for printing. +
 For example *execution* of the below code:
@@ -433,17 +442,182 @@ NOTE: Every exception causes such printing only once and during it's first encou
 NOTE: Only AST Nodes that are part of exception execution stack are printed. Unneeded successful branches of AST that did not cause this exception are discarded and not stored/printed.
 
 == Principles
+This section describes basic principles in the foundation of BlackBox solution. +
+
 === Thread safety
+NOTE: Java execution stack thread affinity is *immutable*. +
+This guarantees that even in Application server deployment - *execution started in a specific thread - will always take place and end only and only within the same thread*. +
+See also: https://stackoverflow.com/questions/52605879/java-application-servers-execution-stack-thread-affinity +
+
+BlackBox is maintaining the application execution stack in a variable in the instances of BlackBoxEngine class. +
+Therefore we need to ensure that each and every thread using BlackBox engine has a designated instance of BlackBoxEngine class. +
+This is achieved by having a static ThreadLocal field in BlackBoxEngine and accessing the dedicated-per-thread BlackBoxEngine via *getInstance* method:
+
+----
+io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+----
+
+NOTE: Above code is provided for information only and it is not required to manually initialize BlackBoxEngine - all the necessary job is done by the injected code automatically.
+
+NOTE: Java application servers interfere with normal java.lang.ThreadLocal class instances. Therefore BlackBox is currently using its own (simplified) implementation of ThreadLocal (which is just a Map<Thread, BlackBoxEngine>).
+
 === Memory leakage prevention
+Runtime data can accumulate indefinitely therefore it is needed to ensure that the portion of Runtime data maintained by BlackBox (in RAM) corresponds only to current active branch of AST execution. +
+Completed AST branches are discarded from storage in BlackBoxEngine execution stack.
+
 === Code equivalency
+Since @BlackBox annotation is performing transformation of user code, as a base principle of transformation it needed to ensure that the transformed code is *equivalent* to the initial user code in terms of its actual functionality excluding the additional injected logging code. +
+This principle should guarantee that @BlackBox annotation can be safely added to any existing or new Groovy methods and constructors, minimizing risk of regression issues.
+
 === Transformation rules
+BlackBox follows a clearly defined set of code transformation rules. +
+Rules of transformation depend on BlackBox level.
+
+==== Method Error transformation
+====
+[source,groovy]
+----
+try {
+    <original Method Code> # <1>
+} catch (java.lang.Throwable automaticThrowable) {
+    io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+    automaticBlackBox.methodExecutionOpen(<metadata>, <method arguments>) # <2> <3>
+    automaticBlackBox.exception(automaticThrowable)
+    automaticBlackBox.executionClose()
+    throw automaticThrowable
+}
+----
+<1> Unmodified original method code
+<2> Meta data includes:
+* Method declaring class package name
+* Method declaring class simple name
+* Method name
+* First and last line and column numbers of the method code
+<3> Method arguments at their state when exception has been catched
+====
+
+NOTE: *visit* method is *NOT* called on method code and the AST traversing/transformation terminates  at this stage.
+
+==== Method transformation
+====
+[source,groovy]
+----
+io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+automaticBlackBox.methodExecutionOpen(<metadata>, <method arguments>) # <1> <2>
+try {
+    automaticBlackBox.executeMethod({
+        <original method code> # <3>
+    })
+}
+catch (java.lang.Throwable automaticThrowable) {
+    automaticBlackBox.exception(automaticThrowable)
+    throw automaticThrowable
+}
+finally {
+    automaticBlackBox.executionClose()
+}
+----
+<1> Meta data includes:
+* Method declaring class package name
+* Method declaring class simple name
+* Method name
+* First and last line and column numbers of the method code
+<2> Method arguments at their state *before* method execution
+<3> Unmodified original method code
+====
+
+NOTE: *visit* method is *NOT* called on method code and the AST traversing/transformation terminates  at this stage.
+
+==== Statement transformations
+Statement transformations happen for BlackBox level "Statement" and above. +
+In addition to "Method" transformation, *visit* method is called on method code and all statements are transformed according to the below rules:
+
+*Return, Continue, Break, Throw statements:*
+
+These statements represent a special case as they affect the application execution stack. Each one of them has a different scope of effect, and this scope is resolved at runtime using *preprocessControlStatement* method. +
+Therefore such statements have to be logged and transformed using different rules than other statements.
+
+[source,groovy]
+----
+automaticBlackBox.preprocessControlStatement(<Control statement class name>, <Original Untransformed Control Statement Code String>, <control statement start and end line and column numbers>, <source AST node variable name>)
+<original control statement (Return, Continue, Break or Throw)>
+----
+
+Example:
+[source,groovy]
+----
+automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.lang.Exception(\'Bar can not be foobar\')\n', 13, 57, 32, 32, 'BlockStatement:statements')
+throw new java.lang.Exception('Bar can not be foobar')
+----
+
+*All other statements:*
+
+[source,groovy]
+----
+automaticBlackBox.statementExecutionOpen(<Statement Class Name>, <Original Untransformed Statement Code String>, <statement start and end line and column numbers>, <source AST node variable name>)
+<recursively transformed statement - child statements and expressions (if needed) transformed>
+automaticBlackBox.executionClose()
+----
+
+Example:
+[source,groovy]
+----
+automaticBlackBox.statementExecutionOpen('IfStatement', 'if ( bar == \'foobar\') {\n    throw new java.lang.Exception(\'Bar can not be foobar\')\n}\n', 9, 10, 31, 33, 'BlockStatement:statements')
+if ( bar == 'foobar') {
+    automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.lang.Exception(\'Bar can not be foobar\')\n', 13, 57, 32, 32, 'BlockStatement:statements')
+    throw new java.lang.Exception('Bar can not be foobar')
+}
+automaticBlackBox.executionClose()
+----
+
+==== Expression transformations
+Expression transformations happen for BlackBox level "Expression". +
+Due to current AST limitations (see https://issues.apache.org/jira/browse/GROOVY-8834) and syntax/semantics it is not possible to directly replace each and every expression with a wrapper. +
+Therefore the expression transformation follows the rules in the below table:
+
 == Solution architecture
+
 === Groovy class model
+==== BlackBox
+==== BlackBoxEngine
+==== BlackBoxEngineEmergency
+==== BlackBoxEngineHierarchical
+==== BlackBoxEngineSequential
+==== BlackBoxLevel
+==== BlackBoxMode
+==== BlackBoxTransformation
+==== BlackBoxVisitor
+==== ThreadLocal
+=== Runtime engine API
+==== expressionExecutionOpen
+==== expressionEvaluation
+==== methodExecutionOpen
+==== statementExecutionOpen
+==== executionClose
+==== preprocessControlStatement
+==== initRootAstNode
+==== executeMethod
+==== exception
 === XSD model
+==== XSD class model diagram
+==== BlackBox
+==== ASTNode
+==== ASTNodeList
+==== MethodNode
+==== Expression
+==== Statement
+==== Argument
+==== ArgumentList
+==== ASTTrace
+==== Object
+==== Exception
 == Risks
 === Performance
+==== ThreadLocal usage
+==== Closure usage
 === Security
 ==== Automatic logging of sensitive data
+=== Test coverage and code disruption
 == Usage
 === Preparation
 ==== Checkout

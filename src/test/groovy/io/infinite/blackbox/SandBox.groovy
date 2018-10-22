@@ -26,7 +26,7 @@ class SandBox implements Runnable {
 
     }
 
-    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    @BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
     String foo(String bar) {
         if (bar == "foobar") {
             throw new Exception("Bar can not be foobar")
