@@ -1,7 +1,7 @@
 = Infinite Logging ∞ BlackBox
 Anton Pryamostanov <https://github.com/apryamostanov[@apryamostanov]>
-:description: This Blueprint defines the solution to automatically generate Groovy syntactic-level logging code and inject it into User code during the compilation resulting in a possibility to produce and review exhaustive application runtime data in a form of XML files with XSD based on simplified Groovy AST class model - by the means of implementing and using a Groovy Annotation.
-:keywords: Groovy, AST, annotation, transformation, logging, code injection, syntactic logging
+:description: This Blueprint defines the solution to automatically generate Groovy semantic-level logging code and inject it into User code during the compilation resulting in a possibility to produce and review exhaustive application runtime data in a form of XML files with XSD based on simplified Groovy AST class model - by the means of implementing and using a Groovy Annotation.
+:keywords: Groovy, AST, annotation, transformation, logging, code injection, semantic logging
 :page-description: {description}
 :page-keywords: {keywords}
 :page-layout: docs
@@ -23,6 +23,7 @@ endif::[]
 :imagesdir: ../images
 :includedir: _includes
 :toc: left
+:source-highlighter: Coderay coderay
 // Refs
 :blackbox-blueprint: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint
 :blackbox-code: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX
@@ -70,10 +71,10 @@ The *solution helps* to address the below key scenarios:
 
 * *What* to log:
 ** 4 levels of logging:
-*** 1 - Method exceptions (with arguments causing exception)
-*** 2 - Method execution (with method arguments, result and exceptions)
-*** 3 - Statements execution within the method (all Groovy statements are supported)
-*** 4 - Expression execution and evaluation (all Groovy expressions are supported) - with the resulting object value and class
+*** Method exceptions (with arguments causing exception)
+*** Method execution (with method arguments, result and exceptions)
+*** Statements execution within the method (all Groovy statements are supported)
+*** Expression execution and evaluation (all Groovy expressions are supported) - with the resulting object value and class
 ** Compile-time metadata:
 *** Line numbers
 *** Code snippets
@@ -94,22 +95,360 @@ There are many situations when it is easier to run a program - and then to read 
 ** Uploading to Logstash
 ** Applying XSLT to XML
 * *Why* spend time writing logging code
-** No more time needed to be wasted e.g. on finding which specific "return" statement returned by placing logging or using debugger
+** No more time needs to be wasted e.g. on finding which specific "return" statement returned by placing logging or using debugger
 
 === Key Features
-==== Compilation stage
-===== Log code injection
+==== Code writing stage
+===== @BlackBox Annotation
+@BlackBox annotation is applicable to:
 
-====== Injection levels
-==== Compilation
+<1> Methods
+<2> Constructors
+
+[source,groovy]
+----
+@BlackBox
+String foo() {
+    return "bar"
+}
+----
+To start using BlackBox, add the @BlackBox annotation as shown above. It is as simple as that!
+
+====== 4+1 BlackBox levels
+Specify explicitly the needed level of logging code injection granularity by providing "blackBoxLevel" parameter to @BlackBox annotation:
+
+[source,groovy]
+----
+@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+String foo() {
+    return "bar"
+}
+----
+There are 5 possible values for the "blackBoxLevel" annotation parameter:
+
+<0> BlackBoxLevel.NONE
+<1> BlackBoxLevel.METHOD_ERROR
+<2> BlackBoxLevel.METHOD
+<3> BlackBoxLevel.STATEMENT
+<4> BlackBoxLevel.EXPRESSION
+
+==== Compilation stage
+During the compilation phase BlackBox performs transformation of methods and constructors having the @BlackBox annotation.
+As the result Method/Constructor code is modified having the additional logging added, while the method signatures and the actual functionality of the method are preserved.
+
+===== Method transformation and Log code injection levels
+====== Method Error
+*Before:*
+[source,groovy]
+----
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+String foo(String bar) {
+    return bar
+}
+----
+
+*After:*
+[source,groovy,linenums]
+----
+String foo(String bar) {
+    try {
+        return bar
+    } catch (java.lang.Throwable automaticThrowable) {
+        io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+        automaticBlackBox.methodExecutionOpen('SandBox', 'io.infinite.blackbox', 'foo', 5, 6, 29, 32, ['bar': bar])
+        automaticBlackBox.exception(automaticThrowable)
+        automaticBlackBox.executionClose()
+        throw automaticThrowable
+    }
+}
+----
+
+Method code is enclosed into Try/Catch statement and in case exception happens during execution of method code - it is logged *along with the method parameters which caused the exception.* +
+
+IMPORTANT: *This is one of the key functionalities of BlackBox* - in this scenario there is practically no performance impact on normal application execution - however if unhandled exception occurs - *we are now automatically aware of the Method Arguments which caused the exception.*
+
+====== Method
+*Before:*
+[source,groovy]
+----
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+String foo(String bar) {
+    return bar
+}
+----
+
+*After:*
+[source,groovy,linenums]
+----
+String foo(String bar) {
+    io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+    automaticBlackBox.methodExecutionOpen('SandBox', 'io.infinite.blackbox', 'foo', 5, 6, 29, 32, ['bar': bar ])
+    try {
+        automaticBlackBox.executeMethod({
+            return bar
+        })
+    }
+    catch (java.lang.Throwable automaticThrowable) {
+        automaticBlackBox.exception(automaticThrowable)
+        throw automaticThrowable
+    }
+    finally {
+        automaticBlackBox.executionClose()
+    }
+}
+----
+
+<1> Method code is *enclosed with Closure* and Try/Catch statement.
+<2> Method code execution is preceeded with *logging of method arguments*.
+<3> Method code closure is passed to "executeMethod" which *logs method result*.
+<3> Any exception are logged
+<4> Finally method execution completion is logged (regardless of whether it is due to unhandled exception or Return statement).
+
+NOTE: Method arguments, result and exceptions are logged. Method code is not modified.
+
+====== Statement
+*Before:*
+[source,groovy]
+----
+@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+String foo(String bar) {
+    return bar
+}
+----
+
+*After:*
+[source,groovy,linenums]
+----
+String foo(String bar) {
+    io.infinite.blackbox.BlackBoxTransformation - io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+    automaticBlackBox.methodExecutionOpen('SandBox', 'io.infinite.blackbox', 'foo', 5, 6, 29, 32, ['bar': bar ])
+    try {
+        automaticBlackBox.executeMethod({
+            automaticBlackBox.preprocessControlStatement('ReturnStatement', '\nreturn bar \n', 9, 19, 31, 31, 'BlockStatement:statements')
+            return bar
+        })
+    }
+    catch (java.lang.Throwable automaticThrowable) {
+        automaticBlackBox.exception(automaticThrowable)
+        throw automaticThrowable
+    }
+    finally {
+        automaticBlackBox.executionClose()
+    }
+}
+----
+
+* BlackBox level "STATEMENT" performs same steps as "METHOD", however *it also transforms the method code.* +
+* The *statements* within the method are transformed according to BlackBox transformation rules, adding logging to method execution while preserving the original functional flow of the method code. +
+* For example in the above method the BlackBox transformation encloses "Return" statement into a closure, which is executed with logging of the line numbers and other meta data of "Return" statement during runtime.
+
+====== Expression
+*Before:*
+[source,groovy]
+----
+@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+String foo(String bar) {
+    return bar
+}
+----
+
+*After:*
+[source,groovy,linenums]
+----
+String foo(String bar) {
+    io.infinite.blackbox.BlackBoxEngine automaticBlackBox = io.infinite.blackbox.BlackBoxEngine.getInstance()
+    automaticBlackBox.methodExecutionOpen('SandBox', 'io.infinite.blackbox', 'foo', 5, 6, 29, 32, ['bar': bar ])
+    try {
+        automaticBlackBox.executeMethod({
+            automaticBlackBox.preprocessControlStatement('ReturnStatement', '\nreturn bar \n', 9, 19, 31, 31, 'BlockStatement:statements')
+            return automaticBlackBox.expressionEvaluation('VariableExpression', 'bar ', 16, 19, 31, 31, {
+                return bar
+            }, 'ReturnStatement:expression')
+        })
+    }
+    catch (java.lang.Throwable automaticThrowable) {
+        automaticBlackBox.exception(automaticThrowable)
+        throw automaticThrowable
+    }
+    finally {
+        automaticBlackBox.executionClose()
+    }
+}
+----
+
+* BlackBox level "EXPRESSION" performs same steps as "STATEMENT", however *it also transforms the expressions.* +
+* The *expressions* within the method are transformed according to BlackBox transformation rules, adding logging to method execution while preserving the original functional flow of the method code. +
+* This helps to log the expression evaluation results and have an exhaustive runtime data for methods having BlackBox annotation.
+* For example in the above method the BlackBox transformation encloses "Return" statement *expression* into a closure, which is executed with logging of the line numbers and other meta data of expression during runtime - *as well as expression evaluation result*.
+
+==== Runtime
+The injected/transformed code is taking it's effect during runtime (execution) of user program. +
+The runtime behavior can be controlled by 2 factors:
+
+* BlackBox System Property "blackbox.mode" which can accept the values from *BlackBoxMode* enumeration and define the Operation Mode (see below section):
+** BlackBoxMode.SEQUENTIAL - corresponds to Real-time sequential Operation mode of BlackBox
+** BlackBoxMode.EMERGENCY - corresponds to Emergency Operation mode of BlackBox
+
+Sample code snippet to set the property programmatically:
+----
+System.setProperty("blackbox.mode", BlackBoxMode.SEQUENTIAL.value())
+----
+
+* Slf4j->Logback configuration - BlackBox currently uses only Logback via Slf4j as logging engine. Therefore normal Logback configuration methodology will affect the logs produced by BlackBox.
+
+BlackBox currently uses Logback *debug* level for its output. +
+There are 2 classes producing the debug output:
+
+* io.infinite.blackbox.BlackBoxEngineSequential
+* io.infinite.blackbox.BlackBoxEngineEmergency
+For example to enable BlackBox output in Spring Boot *application.properties* define parameters:
+----
+logging.level.io.infinite.blackbox.BlackBoxEngineSequential=debug
+logging.level.io.infinite.blackbox.BlackBoxEngineEmergency=debug
+----
+
 ===== Operating modes
-====== Emergency
+BlackBox provides 2 operating modes for different usage scenarios.
+
 ====== Real-time sequential
+This mode is useful for *development/debugging* acting as a supplement/alternative approach to using a Debugger. +
+In this mode the logging code injected during compilation phase (as per BlackBox level values defined during writing the code) is executed and the results *immediately sent to Logback for printing the logs.* +
+For example *execution* of the below code:
+
+[source,groovy]
+----
+package io.infinite.blackbox
+
+class SandBox implements Runnable {
+
+    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    String foo(String bar) {
+        return bar
+    }
+
+    @Override
+    void run() {
+        foo("z")
+    }
+}
+----
+
+Will *output* the following results:
+----
+15:59:49.150 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential - <rootAstNode startDateTime="2018-10-22T15:59:49.120+04:00" xmlns="https://i-t.io/logging/groovy/2_x_x/Main" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+15:59:49.151 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -     <astNodeList>
+15:59:49.182 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -         <astNode xsi:type="MethodNode" methodName="foo" className="io.infinite.blackbox.SandBox" startDateTime="2018-10-22T15:59:49.156+04:00" lineNumber="29" columnNumber="5" lastLineNumber="32" lastColumnNumber="6">
+15:59:49.182 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             <argumentList>
+15:59:49.182 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 <argument argumentClassName="java.lang.String" argumentName="bar">
+15:59:49.211 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <argumentValue>z</argumentValue>
+15:59:49.213 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 </argument>
+15:59:49.213 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             </argumentList>
+15:59:49.213 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             <astNodeList>
+15:59:49.219 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 <astNode xsi:type="Statement" statementClassName="ReturnStatement" startDateTime="2018-10-22T15:59:49.217+04:00" sourceNodeName="BlockStatement:statements" lineNumber="31" columnNumber="9" lastLineNumber="31" lastColumnNumber="19">
+15:59:49.220 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <restoredScriptCode>
+return bar
+</restoredScriptCode>
+15:59:49.220 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <astNodeList>
+15:59:49.224 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     </astNodeList>
+15:59:49.224 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 </astNode>
+15:59:49.227 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 <astNode xsi:type="Expression" expressionClassName="VariableExpression" startDateTime="2018-10-22T15:59:49.226+04:00" sourceNodeName="ReturnStatement:expression" lineNumber="31" columnNumber="16" lastLineNumber="31" lastColumnNumber="19">
+15:59:49.228 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <restoredScriptCode>bar </restoredScriptCode>
+15:59:49.228 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <astNodeList>
+15:59:49.232 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     </astNodeList>
+15:59:49.232 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     <expressionValue className="java.lang.String">
+15:59:49.232 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                         <value>z</value>
+15:59:49.232 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                     </expressionValue>
+15:59:49.232 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 </astNode>
+15:59:49.233 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             </astNodeList>
+15:59:49.233 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             <methodResult className="java.lang.String">
+15:59:49.233 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -                 <value>z</value>
+15:59:49.233 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             </methodResult>
+15:59:49.234 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -         </astNode>
+z
+15:59:49.255 [BlackBoxEngine Shutdown Hook 13] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -     </astNodeList>
+15:59:49.256 [BlackBoxEngine Shutdown Hook 13] DEBUG io.infinite.blackbox.BlackBoxEngineSequential - </rootAstNode>
+
+Process finished with exit code 0
+----
+
+From the above output we can easily track what methods are being called with which parameters, their execution flow and effects as well as results. +
+*We know all what happens in the application up to each and every bit.*
+
+====== Emergency
+This mode is useful for *production* usage providing details only in case when unhandled exception occurs. +
+In this mode the logging code injected during compilation phase (as per BlackBox level values defined during writing the code) is executed and the results are *accumulated in RAM*. +
+*Successful* completed AST execution results are *discarded* from RAM.
+In case when *exception* occurs - those AST execution in RAM that are incomplete (in progress) at the time of exception encouter - are sent to Logback for printing. +
+For example *execution* of the below code:
+
+[source,groovy]
+----
+package io.infinite.blackbox
+
+class SandBox implements Runnable {
+
+    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    String foo(String bar) {
+
+        return bar
+    }
+
+    @Override
+    void run() {
+        foo("z")
+    }
+}
+----
+
+Will *output* the following results (only after exception occurs):
+
+----
+16:17:41.085 [Compilation_SandBox.foo] ERROR io.infinite.blackbox.BlackBoxEngineEmergency - <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<rootAstNode xsi:type="MethodNode" methodName="foo" className="io.infinite.blackbox.SandBox" startDateTime="2018-10-22T16:17:40.843+04:00" lineNumber="29" columnNumber="5" lastLineNumber="35" lastColumnNumber="6" xmlns="https://i-t.io/blackbox/groovy/2_x_x/Main" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+    <astNodeList/>
+    <argumentList>
+        <argument argumentClassName="java.lang.String" argumentName="bar">
+            <argumentValue>foobar</argumentValue>
+        </argument>
+    </argumentList>
+    <exception exceptionDateTime="2018-10-22T16:17:40.913+04:00">
+        <exceptionStackTrace>java.lang.Exception: Bar can not be foobar
+	at io.infinite.blackbox.SandBox$_foo_closure1$_closure3.doCall(SandBox.groovy:32)
+	at io.infinite.blackbox.SandBox$_foo_closure1$_closure3.doCall(SandBox.groovy)
+	at io.infinite.blackbox.BlackBoxEngine.expressionEvaluation(BlackBoxEngine.groovy:70)
+	at io.infinite.blackbox.BlackBoxEngine$expressionEvaluation$3.call(Unknown Source)
+	at io.infinite.blackbox.SandBox$_foo_closure1.doCall(SandBox.groovy:32)
+	at io.infinite.blackbox.SandBox$_foo_closure1.doCall(SandBox.groovy)
+	at io.infinite.blackbox.BlackBoxEngine.executeMethod(BlackBoxEngine.groovy:175)
+	at io.infinite.blackbox.BlackBoxEngine$executeMethod$1.call(Unknown Source)
+	at io.infinite.blackbox.SandBox.foo(SandBox.groovy)
+	at io.infinite.blackbox.SandBox.run(SandBox.groovy:40)
+</exceptionStackTrace>
+    </exception>
+</rootAstNode>
+----
+
+NOTE: Every exception causes such printing only once and during it's first encouter within the BlackBox annotated methods.
+
+NOTE: Only AST Nodes that are part of exception execution stack are printed. Unneeded successful branches of AST that did not cause this exception are discarded and not stored/printed.
+
 == Principles
+=== Thread safety
+=== Memory leakage prevention
+=== Code equivalency
+=== Transformation rules
 == Solution architecture
+=== Groovy class model
+=== XSD model
 == Risks
 === Performance
 === Security
+==== Automatic logging of sensitive data
 == Usage
+=== Preparation
+==== Checkout
+==== Building
 === In the code
+==== Import using Gradle
+==== Using annotation
 === During the runtime

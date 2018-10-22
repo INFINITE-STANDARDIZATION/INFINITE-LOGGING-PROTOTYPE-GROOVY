@@ -3,7 +3,7 @@ package io.infinite.blackbox.tests
 import io.infinite.blackbox.BlackBox
 import io.infinite.blackbox.BlackBoxLevel
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitCaseStatementNoneLevel() {
     switch (1) {
         case 1:
@@ -21,7 +21,7 @@ void visitCaseStatementNoneLevel() {
     }
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitCaseStatementMethodErrorLevel() {
     switch (1) {
         case 1:
@@ -39,7 +39,7 @@ void visitCaseStatementMethodErrorLevel() {
     }
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitCaseStatementMethodLevel() {
     switch (1) {
         case 1:
@@ -57,7 +57,7 @@ void visitCaseStatementMethodLevel() {
     }
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitCaseStatementStatementLevel() {
     switch (1) {
         case 1:
@@ -75,7 +75,7 @@ void visitCaseStatementStatementLevel() {
     }
 }
 
-@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitCaseStatementExpressionLevel() {
     switch (1) {
         case 1:

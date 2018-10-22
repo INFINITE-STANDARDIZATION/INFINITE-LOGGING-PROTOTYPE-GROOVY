@@ -61,9 +61,9 @@ class AllTests {
     }
 
     void run() {
-        System.setProperty("blackBox.mode", BlackBoxMode.EMERGENCY.value())
-        //System.setProperty("blackBox.mode", BlackBoxMode.SEQUENTIAL.value())
-        //System.setProperty("blackBox.mode", BlackBoxMode.HIERARCHICAL.value())
+        System.setProperty("blackbox.mode", BlackBoxMode.EMERGENCY.value())
+        //System.setProperty("blackbox.mode", BlackBoxMode.SEQUENTIAL.value())
+        //System.setProperty("blackbox.mode", BlackBoxMode.HIERARCHICAL.value())
         new VisitBlockStatement().visitBlockStatementNoneLevel()
         new VisitBlockStatement().visitBlockStatementMethodErrorLevel()
         new VisitBlockStatement().visitBlockStatementMethodLevel()

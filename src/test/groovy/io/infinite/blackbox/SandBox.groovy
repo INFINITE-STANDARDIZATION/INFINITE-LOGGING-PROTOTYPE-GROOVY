@@ -1,11 +1,11 @@
 package io.infinite.blackbox
 
-class SandBox {
+class SandBox implements Runnable {
 
-    static void main(String[] args) {
-        //System.setProperty("blackBox.mode", BlackBoxMode.EMERGENCY.value())
-        //System.setProperty("blackBox.mode", BlackBoxMode.SEQUENTIAL.value())
-        System.setProperty("blackBox.mode", BlackBoxMode.HIERARCHICAL.value())
+    static void main2(String[] args) {
+        //System.setProperty("blackbox.mode", BlackBoxMode.EMERGENCY.value())
+        //System.setProperty("blackbox.mode", BlackBoxMode.SEQUENTIAL.value())
+        System.setProperty("blackbox.mode", BlackBoxMode.HIERARCHICAL.value())
         new SandBox().visitArgumentlistExpressionExpressionLevel(1,2,3)
         //new SandBox().visitThrowStatementExpressionLevel()
     }
@@ -26,8 +26,17 @@ class SandBox {
 
     }
 
-    //@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
-    void visitThrowStatementExpressionLevel() {
+    @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+    String foo(String bar) {
+        if (bar == "foobar") {
+            throw new Exception("Bar can not be foobar")
+        }
+        return bar
+    }
 
+    @Override
+    void run() {
+        System.setProperty("blackbox.mode", BlackBoxMode.EMERGENCY.value())
+        System.out.println(foo("foobar"))
     }
 }

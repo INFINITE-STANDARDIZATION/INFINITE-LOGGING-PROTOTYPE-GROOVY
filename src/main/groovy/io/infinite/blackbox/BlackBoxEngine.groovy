@@ -29,9 +29,9 @@ class BlackBoxEngine {
         if (blackBoxEngine == null) {
             XMLASTNode.getMetaClass().parentAstNode = null
             Throwable.getMetaClass().isLoggedByBlackBox = null
-            if (System.getProperty("blackBox.mode") == BlackBoxMode.SEQUENTIAL.value()) {
+            if (System.getProperty("blackbox.mode") == BlackBoxMode.SEQUENTIAL.value()) {
                 blackBoxEngine = new BlackBoxEngineSequential()
-            } else if (System.getProperty("blackBox.mode") == BlackBoxMode.HIERARCHICAL.value()) {
+            } else if (System.getProperty("blackbox.mode") == BlackBoxMode.HIERARCHICAL.value()) {
                 blackBoxEngine = new BlackBoxEngineHierarchical()
             } else {
                 blackBoxEngine = new BlackBoxEngineEmergency()
