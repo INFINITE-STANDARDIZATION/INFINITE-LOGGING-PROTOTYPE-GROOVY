@@ -580,10 +580,13 @@ if ( bar == 'foobar') {
 automaticBlackBox.executionClose()
 ----
 
+:outerinner:: "Outer" transformation means outside corresponding *visit* method of the expression. "Inner" means inside "visit" method.
+
+NOTE: {outerinner}
 
 [cols="a,a,a,a,a"]
 |===
-
+|Statement Class|Statement self transformation (always *outer*)|Expression child nodes transformations (all children always visited) (always *inner*)|Comments
 
 |===
 
@@ -624,7 +627,7 @@ IMPORTANT: BlackBox transformation visits all AST Nodes. Thus whole AST is visit
 
 Expression transformations follow the rules in the below table:
 
-NOTE: "Outer" transformation means outside corresponding *visit* method of the expression. "Inner" means inside "visit" method.
+NOTE: {outerinner}
 
 [cols="a,a,a,a,a"]
 |===
