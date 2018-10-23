@@ -3,7 +3,7 @@ package io.infinite.blackbox.tests
 import io.infinite.blackbox.BlackBox
 import io.infinite.blackbox.BlackBoxLevel
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
+@BlackBox(blackBoxLevel = BlackBoxLevel.NONE)
 void visitThrowStatementNoneLevel() {
     try {
         System.out.println("test")
@@ -18,7 +18,7 @@ void visitThrowStatementNoneLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
 void visitThrowStatementMethodErrorLevel() {
     try {
         System.out.println("test")
@@ -33,7 +33,7 @@ void visitThrowStatementMethodErrorLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
+@BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
 void visitThrowStatementMethodLevel() {
     try {
         System.out.println("test")
@@ -48,7 +48,7 @@ void visitThrowStatementMethodLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
+@BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
 void visitThrowStatementStatementLevel() {
     try {
         System.out.println("test")
@@ -63,7 +63,7 @@ void visitThrowStatementStatementLevel() {
     }
 }
 
-//@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
+@BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
 void visitThrowStatementExpressionLevel() {
     try {
         System.out.println("test")

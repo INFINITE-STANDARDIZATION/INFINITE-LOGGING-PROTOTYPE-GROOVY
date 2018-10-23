@@ -345,7 +345,7 @@ class BlackBoxVisitor extends CodeVisitorSupport {
     @Override
     void visitDeclarationExpression(DeclarationExpression iDeclarationExpression) {
         iDeclarationExpression.origCodeString = blackBoxTransformation.codeString(iDeclarationExpression)
-        super.visitDeclarationExpression(iDeclarationExpression)
+        iDeclarationExpression.getRightExpression().visit(this)
     }
 
     @Override

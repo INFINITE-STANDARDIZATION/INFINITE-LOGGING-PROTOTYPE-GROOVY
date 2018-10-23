@@ -274,7 +274,6 @@ class BlackBoxTransformation extends AbstractASTTransformation {
                 blackBoxLevel.value() < BlackBoxLevel.EXPRESSION.value() ||
                 iExpression instanceof EmptyExpression ||
                 iExpression instanceof MapEntryExpression ||
-                //iExpression instanceof VariableExpression || //return bar (bar is variable expression)
                 iExpression instanceof ArgumentListExpression ||
                 iExpression.isTransformed == true
         ) {
