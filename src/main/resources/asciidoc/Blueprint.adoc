@@ -36,6 +36,15 @@ TODO:
 == Purpose
 {description}
 
+== In short
+*@BlackBox* annotation automatically injects a lot of logging code into user-defined Groovy methods/constructors without affecting the user program logic. +
+Granularity of injected code can be defined by the user (programmer) up to:
+
+* Method Error logging (exception and causing method arguments are logged)
+* Method invocation logging (method arguments and result are logged)
+* Statement-level logging
+* Expression-level logging
+
 == Introduction
 Logging is one of the most important parts of modern applications. +
 Its significance only increases in case of:
@@ -556,7 +565,7 @@ throw new java.lang.Exception('Bar can not be foobar')
 [source,groovy]
 ----
 automaticBlackBox.statementExecutionOpen(<Statement Class Name>, <Original Untransformed Statement Code String>, <statement start and end line and column numbers>, <source AST node variable name>)
-<recursively transformed statement - child statements and expressions (if needed) transformed>
+<recursively transformed initial statement - child statements and expressions (if needed) transformed>
 automaticBlackBox.executionClose()
 ----
 
@@ -571,8 +580,36 @@ if ( bar == 'foobar') {
 automaticBlackBox.executionClose()
 ----
 
-==== Expression transformations
+
+[cols="a,a,a,a,a"]
+|===
+
+
+|===
+
+==== Expression transformation
+
 Expression transformations are applied when BlackBox level is set to "Expression".
+
+Unless specified differently, any expression undergoes the below default transformation:
+
+*Standard expression transformation*
+
+[source,groovy]
+----
+automaticBlackBox.expressionEvaluation(<Expression Class Name>, <Original Untransformed Expression Code String>, <statement start and end line and column numbers>, {
+                <recursively transformed initial expression - child statements and expressions (if needed) transformed>
+}, <source AST node variable name>)
+----
+
+Example:
+[source,groovy]
+----
+automaticBlackBox.expressionEvaluation('VariableExpression', 'bar ', 16, 19, 31, 31, {
+                return bar
+}, 'ReturnStatement:expression')
+----
+
 
 NOTE: See also https://issues.apache.org/jira/browse/GROOVY-8834
 
@@ -587,262 +624,133 @@ IMPORTANT: BlackBox transformation visits all AST Nodes. Thus whole AST is visit
 
 Expression transformations follow the rules in the below table:
 
-[cols=",a,a"]
+NOTE: "Outer" transformation means outside corresponding *visit* method of the expression. "Inner" means inside "visit" method.
+
+[cols="a,a,a,a,a"]
 |===
-|Condition |Transformation |Comments
+|Expression Class|Expression self transformation (always *outer*)|Expression child nodes transformations (all children always visited)|Children Transformation type (inner/outer)|Comments
 
-|EmptyExpression
-|No transformation
-|
-
-|MapEntryExpression
-|No transformation
-|Interim expression which does not itself evaluate to single object +
-Logging is injected into its parent and child nodes (key/values and map).
-
-|ArgumentListExpression
-|No transformation
-|Interim expression which does not itself evaluate to single object +
-Logging is injected into its parent and child nodes.
-
-|DeclarationExpression
-|*Not* wrapped into MethodCallExpression; transformed into ListOfExpressionsExpression having the below expressions:
+|EmptyExpression|No transformation|No transformation|Outer|
+|MapEntryExpression|No transformation|* keyExpression
+* valueExpression|Outer|
+|ArgumentListExpression|No transformation|No transformation|Outer|
+|DeclarationExpression|*Not* wrapped into MethodCallExpression; transformed into ListOfExpressionsExpression having the below expressions:
 
 <1> Injected logging code (MethodCallExpression)
-<2> Declaration expression with *transformed* right expression
+<2> Self expression after child nodes transformations
 <3> Injected logging code (MethodCallExpression)
-|* Left expression of declaration is never transformed
-* Right expression is transformed
+|* leftExpression of declaration is never transformed
+
+IMPORTANT: Furthermore - leftExpression of DeclarationExpression is *not* visited.
+This is the only case when BlackBox AST traversing is terminated prematurely.
+
+* Right expression is transformed|Outer|
 * Usage of ListOfExpressionsExpression is a hack
 ** it works in similar way to BlockStatement - however such usage is "undocumented feature" of Groovy AST
-* *Q: Why do we inject code only for DeclarationExpression?*
-** A: Declaration expression does not evaluate itself to object and can't be replaced with MethodCall expression. +
-Additionally VariableScopeVisitor must be able to declare the variable after BlackBox transformation into the same branch of variable scopes. +
-Thus we have to surround DeclarationExpression with logging code (MethodCall expressions) and replace it with ListOfExpressionsExpression.
 
-|BinaryExpression
-|BinaryExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-BinaryExpression:rightExpression is transformed. +
-BinaryExpression:leftExpression is conditionally transformed.
-|* Right expression is always transformed
-* Left expression is transformed only when operation is *not* "Assignment" ("=").
+TIP: *Q*: Why do we inject code only for DeclarationExpression (by adding expressions into ListOfExpressionsExpression) and replace other Expressions with MethodCall expression? +
+*A*: Declaration expression does not evaluate itself to object and can't be replaced with MethodCall expression. +
 
+NOTE: VariableScopeVisitor must be able to declare the variable after BlackBox transformation into the same branch of variable scopes. +
+Thus we have to *surround* DeclarationExpression with logging code (MethodCall expressions) and replace it with ListOfExpressionsExpression.
 
-|BitwiseNegationExpression
-|BitwiseNegationExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-BitwiseNegationExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|BinaryExpression|Standard transformation|* rightExpression
+* leftExpression (only when operation is *not* "Assignment" ("="))|Outer|
 
-|NotExpression
-|NotExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-NotExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|BitwiseNegationExpression|Standard transformation|* expression
+|Outer|
 
-|BooleanExpression
-|BooleanExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-BooleanExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|NotExpression|Standard transformation|* expression
+|Outer|
 
-|CastExpression
-|CastExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-ClassExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|BooleanExpression|Standard transformation|* expression
+|Outer|
 
-|ConstructorCallExpression
-|ConstructorCallExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-ConstructorCallExpression:arguments is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|CastExpression|Standard transformation|* expression
+|Outer|
 
-|MethodPointerExpression
-|MethodPointerExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-MethodPointerExpression:expression and MethodPointerExpression:methodName is transformed
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|ConstructorCallExpression|Standard transformation|* arguments
+|Outer|
 
-|AttributeExpression
-|AttributeExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-AttributeExpression:objectExpression and PropertyExpression:property is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|MethodPointerExpression|Standard transformation|* expression
+* methodName
+|Outer|
 
-|PropertyExpression
-|PropertyExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-PropertyExpression:objectExpression and PropertyExpression:property is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|AttributeExpression|Standard transformation|* objectExpression
+* property
+|Outer|
 
-|RangeExpression
-|RangeExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-RangeExpression:from and RangeExpression:to is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|PropertyExpression|Standard transformation|* objectExpression
+* property
+|Outer|
 
-|SpreadExpression
-|SpreadExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-SpreadExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|RangeExpression|Standard transformation|* from
+* to
+|Outer|
 
-|SpreadMapExpression
-|SpreadMapExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-SpreadExpression:expression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|SpreadExpression|Standard transformation|* expression
+|Outer|
 
-|StaticMethodCallExpression
-|StaticMethodCallExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-StaticMethodCallExpression:arguments is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|SpreadMapExpression|Standard transformation|* expression
+|Outer|
 
-|ElvisOperatorExpression
-|ElvisOperatorExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-ElvisOperatorExpression:trueExpression and ElvisOperatorExpression:falseExpression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|StaticMethodCallExpression|Standard transformation|* arguments
+|Outer|
 
-|TernaryExpression
-|TernaryExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-TernaryExpression:booleanExpression, TernaryExpression:trueExpression, TernaryExpression:falseExpression is transformed.
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|ElvisOperatorExpression|Standard transformation|* trueExpression
+* falseExpression
+|Outer|
 
-|UnaryMinusExpression
-|UnaryMinusExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-UnaryMinusExpression:expression is transformed
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|TernaryExpression|Standard transformation|* booleanExpression
+* trueExpression
+* falseExpression
+|Outer|
 
-|UnaryPlusExpression
-|UnaryPlusExpression is wrapped into MethodCallExpression ("expressionEvaluation" method). +
-UnaryPlusExpression:expression is transformed
-|Whole expression is replaced with new instance outside "visit" method method (due to GROOVY-8834)
+|UnaryMinusExpression|Standard transformation|* expression
+|Outer|
 
-|MethodCallExpression
-|
-|Transformed in its corresponding Visit method.
-
-|StaticMethodCallExpression
-|
-|Transformed in its corresponding Visit method.
-
-|ConstructorCallExpression
-|
-|Transformed in its corresponding Visit method.
-
-|BinaryExpression
-|
-|Transformed in its corresponding Visit method.
-
-|TernaryExpression
-|
-|Transformed in its corresponding Visit method.
-
-|ElvisOperatorExpression
-|
-|Transformed in its corresponding Visit method.
-
-|PostfixExpression
-|
-|Transformed in its corresponding Visit method.
-
-|PrefixExpression
-|
-|Transformed in its corresponding Visit method.
-
-|BooleanExpression
-|
-|Transformed in its corresponding Visit method.
-
-|NotExpression
-|
-|Transformed in its corresponding Visit method.
-
-|ClosureExpression
-|
-|Transformed in its corresponding Visit method.
-
-|TupleExpression
-|
-|Transformed in its corresponding Visit method.
-
-|ListExpression
-|
-|Transformed in its corresponding Visit method.
-
-|ArrayExpression
-|
-|Transformed in its corresponding Visit method.
-
-|MapExpression
-|
-|Transformed in its corresponding Visit method.
-
-|MapEntryExpression
-|
-|Transformed in its corresponding Visit method.
-
-|RangeExpression
-|
-|Transformed in its corresponding Visit method.
-
-|SpreadExpression
-|
-|Transformed in its corresponding Visit method.
-
-|SpreadMapExpression
-|
-|Transformed in its corresponding Visit method.
-
-|MethodPointerExpression
-|
-|Transformed in its corresponding Visit method.
-
-|UnaryMinusExpression
-|
-|Transformed in its corresponding Visit method.
-
-|UnaryPlusExpression
-|
-|Transformed in its corresponding Visit method.
-
-|BitwiseNegationExpression
-|
-|Transformed in its corresponding Visit method.
-
-|CastExpression
-|
-|Transformed in its corresponding Visit method.
+|UnaryPlusExpression|Standard transformation|* expression
+|Outer|
 
 |ConstantExpression
+|Standard transformation
+|No
+|N/A
 |
-|Transformed in its corresponding Visit method.
+
 
 |ClassExpression
+|Standard transformation
+|No
+|N/A
 |
-|Transformed in its corresponding Visit method.
+
 
 |VariableExpression
+|Standard transformation
+|No
+|N/A
 |
-|Transformed in its corresponding Visit method.
-
-|DeclarationExpression
-|
-|Transformed in its corresponding Visit method.
-
-|PropertyExpression
-|
-|Transformed in its corresponding Visit method.
-
-|AttributeExpression
-|
-|Transformed in its corresponding Visit method.
 
 |FieldExpression
-|
-|Transformed in its corresponding Visit method.
+|Standard transformation
+|No
+|N/A
+|TODO: Needs to be tested and probably should replicate PropertyExpression
+
 
 |GStringExpression
+|Standard transformation
+|* Values
+|Inner
 |
-|Transformed in its corresponding Visit method.
-
-|ArgumentListExpression
-|
-|Transformed in its corresponding Visit method.
 
 |ClosureListExpression
-|
-|Transformed in its corresponding Visit method.
+|Standard transformation
+|* Expressions
+|Inner
+|TODO: Needs to be tested
+
 
 
 |===
