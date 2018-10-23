@@ -6,7 +6,9 @@ Anton Pryamostanov <https://github.com/apryamostanov[@apryamostanov]>
 :page-keywords: {keywords}
 :page-layout: docs
 ifndef::env-site[]
+:toc:
 :toc: left
+:toclevels: 6
 :icons: font
 :idprefix:
 :idseparator: -
@@ -22,8 +24,8 @@ endif::[]
 :figure-caption!:
 :imagesdir: ../images
 :includedir: _includes
-:toc: left
 :source-highlighter: Coderay coderay
+:sectnums:
 // Refs
 :blackbox-blueprint: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint
 :blackbox-code: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX
@@ -451,8 +453,9 @@ NOTE: Every exception causes such printing only once and during it's first encou
 NOTE: Only AST Nodes that are part of exception execution stack are printed. Unneeded successful branches of AST that did not cause this exception are discarded and not stored/printed.
 
 == Principles
-This section describes basic principles in the foundation of BlackBox solution. +
-IMPORTANT: Assurance of compliance to these principles must define the foundation of Test Strategy of the solution.
+This section describes basic principles in the foundation of BlackBox solution.
+
+IMPORTANT: Assurance of compliance to these principles must define the Test Strategy of the solution.
 
 === Thread safety
 NOTE: Java execution stack thread affinity is *immutable*. +
@@ -479,9 +482,11 @@ Completed AST branches are discarded from storage in BlackBoxEngine execution st
 Since @BlackBox annotation is performing transformation of user code, as a base principle of transformation it needed to ensure that the transformed code is *equivalent* to the initial user code in terms of its actual functionality excluding the additional injected logging code. +
 This principle should guarantee that @BlackBox annotation can be safely added to any existing or new Groovy methods and constructors, minimizing risk of regression issues.
 
+== Solution architecture
+
 === Transformation rules
 BlackBox follows a clearly defined set of code transformation rules. +
-Rules of transformation depend on BlackBox level.
+All Groovy AST Statements and Expressions are subject for transformation using these rules, depending on BlackBox level. +
 
 ==== Method Error transformation
 ====
@@ -542,9 +547,18 @@ NOTE: *visit* method is *NOT* called on method code and the AST traversing/trans
 Statement transformations are applied when BlackBox level is set to "Statement" and above. +
 In addition to "Method" transformation, *visit* method is called on method code and all statements are transformed according to the below rules:
 
-*Return, Continue, Break, Throw statements:*
+===== Control Statement transformation
 
-These statements represent a special case as they affect the application execution stack. Each one of them has a different scope of effect, and this scope is resolved at runtime using *preprocessControlStatement* method. +
+TIP: Control statement is a statement that affects the order of statements execution in the program.
+
+There are 4 types of Control Statements in Groovy:
+
+<1> Return
+<2> Continue
+<3> Break
+<4> Throw
+
+These statements represent a special case for BlackBox transformation as they affect the application execution flow. Each one of them has a different scope of effect, and this scope is resolved at runtime using *preprocessControlStatement* method. +
 Therefore such statements have to be logged and transformed using different rules than other statements.
 
 [source,groovy]
@@ -560,7 +574,9 @@ automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.l
 throw new java.lang.Exception('Bar can not be foobar')
 ----
 
-*All other statements:*
+===== Standard Statement transformation
+
+All other statements without exceptions are subject to below transformation:
 
 [source,groovy]
 ----
@@ -584,9 +600,72 @@ automaticBlackBox.executionClose()
 
 NOTE: {outerinner}
 
-[cols="a,a,a,a,a"]
+[cols="a,a,a,a"]
 |===
 |Statement Class|Statement self transformation (always *outer*)|Expression child nodes transformations (all children always visited) (always *inner*)|Comments
+
+|BlockStatement|<<Standard Statement transformation>>|* statements
+|
+
+|ForStatement|<<Standard Statement transformation>>|* collectionExpression
+* loopBlock
+|
+
+|WhileStatement|<<Standard Statement transformation>>|* booleanExpression
+* loopBlock
+|
+
+|DoWhileStatement|<<Standard Statement transformation>>|* booleanExpression
+* loopBlock
+|
+
+|IfStatement|<<Standard Statement transformation>>|* booleanExpression
+* ifBlock
+* elseBlock
+|
+
+|ExpressionStatement|<<Standard Statement transformation>>|* expression
+|
+
+|ReturnStatement|<<Control Statement transformation>>|*expression
+|Child Expression is transformed only non-void methods
+
+|AssertStatement|<<Standard Statement transformation>>|* booleanExpression
+* messageExpression
+|
+
+|TryCatchStatement|<<Standard Statement transformation>>|* tryStatement
+* code (catchStatements)
+* finallyStatement
+| All catch statements are transformed
+
+|EmptyStatement|No transformation|
+|
+
+|SwitchStatement|<<Standard Statement transformation>>|* expression
+* code (switchStatements)
+* defaultStatement
+| All case statements are transformed
+
+|CaseStatement|<<Standard Statement transformation>>|* expression
+* code
+|
+
+|BreakStatement|<<Control Statement transformation>>|No transformation
+|
+
+|ContinueStatement|<<Control Statement transformation>>|*No transformation
+|
+
+|SynchronizedStatement|<<Standard Statement transformation>>|* expression
+* code
+|
+
+|ThrowStatement|<<Control Statement transformation>>|* expression
+|
+
+|CatchStatement|<<Standard Statement transformation>>|* code
+|
 
 |===
 
@@ -596,7 +675,9 @@ Expression transformations are applied when BlackBox level is set to "Expression
 
 Unless specified differently, any expression undergoes the below default transformation:
 
-*Standard expression transformation*
+===== Standard Expression transformation
+
+All expressions except DeclarationExpression are subject to below transformation:
 
 [source,groovy]
 ----
@@ -613,6 +694,30 @@ automaticBlackBox.expressionEvaluation('VariableExpression', 'bar ', 16, 19, 31,
 }, 'ReturnStatement:expression')
 ----
 
+===== Declaration Expression transformation
+
+DeclarationExpression is *Not* wrapped into MethodCallExpression - it is rather transformed into ListOfExpressionsExpression having the below expressions:
+
+<1> Injected logging code (MethodCallExpression)
+<2> Self expression after child nodes transformations
+<3> Injected logging code (MethodCallExpression)
+
+* leftExpression of declaration is never transformed
+
+IMPORTANT: Furthermore - leftExpression of DeclarationExpression is *not* visited.
+This is the only case when BlackBox AST traversing is terminated prematurely.
+
+* Right expression is transformed
+* Usage of ListOfExpressionsExpression is a hack
+** it works in similar way to BlockStatement - however such usage is "undocumented feature" of Groovy AST
+
+TIP: *Q*: Why do we inject code only for DeclarationExpression (by adding expressions into ListOfExpressionsExpression) and replace other Expressions with MethodCall expression? +
+*A*: Declaration expression does not evaluate itself to object and can't be replaced with MethodCall expression. +
+
+NOTE: VariableScopeVisitor must be able to declare the variable after BlackBox transformation into the same branch of variable scopes. +
+Thus we have to *surround* DeclarationExpression with logging code (MethodCall expressions) and replace it with ListOfExpressionsExpression.
+
+===== Expression transformation rules
 
 NOTE: See also https://issues.apache.org/jira/browse/GROOVY-8834
 
@@ -637,119 +742,103 @@ NOTE: {outerinner}
 |MapEntryExpression|No transformation|* keyExpression
 * valueExpression|Outer|
 |ArgumentListExpression|No transformation|No transformation|Outer|
-|DeclarationExpression|*Not* wrapped into MethodCallExpression; transformed into ListOfExpressionsExpression having the below expressions:
 
-<1> Injected logging code (MethodCallExpression)
-<2> Self expression after child nodes transformations
-<3> Injected logging code (MethodCallExpression)
-|* leftExpression of declaration is never transformed
+|DeclarationExpression|<<Declaration Expression transformation>>|* rightExpression
+|Outer|
 
-IMPORTANT: Furthermore - leftExpression of DeclarationExpression is *not* visited.
-This is the only case when BlackBox AST traversing is terminated prematurely.
-
-* Right expression is transformed|Outer|
-* Usage of ListOfExpressionsExpression is a hack
-** it works in similar way to BlockStatement - however such usage is "undocumented feature" of Groovy AST
-
-TIP: *Q*: Why do we inject code only for DeclarationExpression (by adding expressions into ListOfExpressionsExpression) and replace other Expressions with MethodCall expression? +
-*A*: Declaration expression does not evaluate itself to object and can't be replaced with MethodCall expression. +
-
-NOTE: VariableScopeVisitor must be able to declare the variable after BlackBox transformation into the same branch of variable scopes. +
-Thus we have to *surround* DeclarationExpression with logging code (MethodCall expressions) and replace it with ListOfExpressionsExpression.
-
-|BinaryExpression|Standard transformation|* rightExpression
+|BinaryExpression|<<Standard Expression transformation>>|* rightExpression
 * leftExpression (only when operation is *not* "Assignment" ("="))|Outer|
 
-|BitwiseNegationExpression|Standard transformation|* expression
+|BitwiseNegationExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|NotExpression|Standard transformation|* expression
+|NotExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|BooleanExpression|Standard transformation|* expression
+|BooleanExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|CastExpression|Standard transformation|* expression
+|CastExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|ConstructorCallExpression|Standard transformation|* arguments
+|ConstructorCallExpression|<<Standard Expression transformation>>|* arguments
 |Outer|
 
-|MethodPointerExpression|Standard transformation|* expression
+|MethodPointerExpression|<<Standard Expression transformation>>|* expression
 * methodName
 |Outer|
 
-|AttributeExpression|Standard transformation|* objectExpression
+|AttributeExpression|<<Standard Expression transformation>>|* objectExpression
 * property
 |Outer|
 
-|PropertyExpression|Standard transformation|* objectExpression
+|PropertyExpression|<<Standard Expression transformation>>|* objectExpression
 * property
 |Outer|
 
-|RangeExpression|Standard transformation|* from
+|RangeExpression|<<Standard Expression transformation>>|* from
 * to
 |Outer|
 
-|SpreadExpression|Standard transformation|* expression
+|SpreadExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|SpreadMapExpression|Standard transformation|* expression
+|SpreadMapExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|StaticMethodCallExpression|Standard transformation|* arguments
+|StaticMethodCallExpression|<<Standard Expression transformation>>|* arguments
 |Outer|
 
-|ElvisOperatorExpression|Standard transformation|* trueExpression
+|ElvisOperatorExpression|<<Standard Expression transformation>>|* trueExpression
 * falseExpression
 |Outer|
 
-|TernaryExpression|Standard transformation|* booleanExpression
+|TernaryExpression|<<Standard Expression transformation>>|* booleanExpression
 * trueExpression
 * falseExpression
 |Outer|
 
-|UnaryMinusExpression|Standard transformation|* expression
+|UnaryMinusExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
-|UnaryPlusExpression|Standard transformation|* expression
+|UnaryPlusExpression|<<Standard Expression transformation>>|* expression
 |Outer|
 
 |ConstantExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |No
 |N/A
 |
 
 
 |ClassExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |No
 |N/A
 |
 
 
 |VariableExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |No
 |N/A
 |
 
 |FieldExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |No
 |N/A
 |TODO: Needs to be tested and probably should replicate PropertyExpression
 
 
 |GStringExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |* Values
 |Inner
 |
 
 |ClosureListExpression
-|Standard transformation
+|<<Standard Expression transformation>>
 |* Expressions
 |Inner
 |TODO: Needs to be tested
@@ -757,8 +846,6 @@ Thus we have to *surround* DeclarationExpression with logging code (MethodCall e
 
 
 |===
-
-== Solution architecture
 
 === Groovy class model
 ==== BlackBox
