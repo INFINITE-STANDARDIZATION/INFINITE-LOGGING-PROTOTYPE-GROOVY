@@ -1,6 +1,6 @@
 = Infinite Logging ∞ BlackBox
 Anton Pryamostanov <https://github.com/apryamostanov[@apryamostanov]>
-:description: This Blueprint defines the solution to automatically generate Groovy semantic-level logging code and inject it into User code during the compilation resulting in a possibility to produce and review exhaustive application runtime data in a form of XML files with XSD based on simplified Groovy AST class model - by the means of implementing and using a Groovy Annotation.
+:description: This Blueprint defines the solution to automatically generate Groovy <<Semantic logging>> code and inject it into <<User code>> during the <<Compilation stage>> resulting in a possibility to produce and review exhaustive application runtime data in a form of XML files with <<XSD model>> based on simplified Groovy AST class model - by the means of developing and using a <<BlackBox Annotation,Groovy Annotation>>.
 :keywords: Groovy, AST, annotation, transformation, logging, code injection, semantic logging
 :page-description: {description}
 :page-keywords: {keywords}
@@ -39,26 +39,39 @@ TODO:
 {description}
 
 == In short
-*@BlackBox* annotation automatically injects a lot of logging code into user-defined Groovy methods/constructors without affecting the user program logic. +
+<<BlackBox Annotation>> automatically injects a lot of logging code into user-defined Groovy methods/constructors without affecting the user program logic. +
 Granularity of injected code can be defined by the user (programmer) up to:
 
-* Method Error logging (exception and causing method arguments are logged)
-* Method invocation logging (method arguments and result are logged)
-* Statement-level logging
-* Expression-level logging
+* <<Method Exception handling transformation, Method Exceptions logging>> (exception and causing method arguments are logged)
+* <<Method transformation, Method invocation logging>> (method arguments and result are logged)
+* <<Statement transformation, Statement-level logging>>
+* <<Expression transformation, Expression-level logging>>
 
 == Introduction
-Logging is one of the most important parts of modern applications. +
+
+=== Foreword
+
+<<Logging>> is one of the most important parts of modern applications. +
 Its significance only increases in case of:
 
 * Financial environments (consider PCI-DSS and sensitive data logging)
 * Cloud environments (consider logging to Logstash)
 * GDPR
 
-While at a level of Logging engines (Log4J, JUL, Logback -> SLF4J) things are good, there is a theoretical gap in terms of approach and best practices for logging implementation as well as its automation. +
+Some scenarios when logging is useful include:
+
+* Network data exchange (TCP, HTTP, SOAP, REST)
+* Periphery communication (Bluetooth, serial port, USB, etc)
+* IOT (I2C, SPI)
+* Automotive communication (Canbus and its implementations)
+
+=== The Problem
+
+While at a level of <<Logging Engine, Logging engines>> (Log4J, JUL, Logback -> SLF4J) things are good, there is a methodological gap in terms of approach and best practices for logging integration into <<User code>> as well as its automation. +
 In short there is *no set of rules* helping programmers to understand:
 
 * *What* to log
+* *How* to structure the log data
 * *When* to log
 * *Where* to place logging code in the application
 * *How* log can be used on Test and Production environments
@@ -77,9 +90,14 @@ Programmers have to manually place lines with logging leading to *unwanted resul
 * Chances of misplacing the logging code and missing important output
 * Increase of development time and costs
 
-As an Open Source community we are taking an initiative to come up with a new Logging solution addressing these limitations and supporting many additional features. +
-The *solution helps* to address the below key scenarios:
+=== The Solution
 
+As an Open Source community we are taking an initiative to come up with a new Logging solution addressing these limitations and supporting many additional features. +
+
+The *"BlackBox" solution helps* to address the key questions:
+
+.Addressed cases
+====
 * *What* to log:
 ** 4 levels of logging:
 *** Method exceptions (with arguments causing exception)
@@ -89,6 +107,8 @@ The *solution helps* to address the below key scenarios:
 ** Compile-time metadata:
 *** Line numbers
 *** Code snippets
+* *How* to structure the log data
+** Log data is automatically structured into XML files according to XSD therefore leaving no room for disambiguation when it comes to interpretation of log data.
 * *When* to log
 ** 2 operational modes are supported:
 *** *Sequential* real-time - *an alternative to using Debugger*.
@@ -101,25 +121,63 @@ There are many situations when it is easier to run a program - and then to read 
 ** Performance profiling and optimization
 ** Statistics
 ** Analytics
+*** Uploading to Logstash
+*** Applying XSLT to log XML for easier analysing
 ** Monitoring
 ** Telemetry
-** Uploading to Logstash
-** Applying XSLT to XML
+** Journaling
 * *Why* spend time writing logging code
-** No more time needs to be wasted e.g. on:
-
-====
-Finding which specific "return" statement returned by placing logging or using debugger.
+** To save the time used to write logging code
 ====
 
-=== Key Features
-==== Code writing stage
-===== @BlackBox Annotation
+TIP: For example consider scenario of finding which specific "return" statement returned by placing logging or using debugger.
+
+
+=== Terminology
+
+==== Logging
+
+Logging is a process of saving *structured* data on a permanent storage with assumption that it may be used in future. +
+However it is neither known how and when this data will be used neither it is guaranteed that this data is useful.
+
+==== Logging Engine
+
+Logging Engine is a library that provides an API to save log data. +
+
+IMPORTANT: Logging Engine does not define neither the structure itself nor API of structuring the log data. +
+Logging Engine defines only structure of log record format (such as adding timestamp and thread infromation), while the input data comes in its final form from outside of the log engine.
+
+==== User code
+
+Code written by application programmers for business or other purposes.
+
+==== Semantic logging
+
+Semantic-level logging is a technique which helps to trace application execution flow as per code semantic structures such as:
+
+<1> Method execution start and end
+<2> Method arguments and result
+<3> Statements such as if/else
+<4> Expressions such as assignment expression
+
+==== BlackBox
+
+Black box is a hardware device in the airplane that keeps record of flight parameters and flight control system operation signals (such as flaps control).
+
+BlackBox solution acts as a software Black box for your programs helping to recover data that has caused exceptions in <<User code>>.
+
+== Key Features
+
+=== Code writing stage
+
+==== BlackBox Annotation
+
 @BlackBox annotation is applicable to:
 
 <1> Methods
 <2> Constructors
 
+.Example:
 [source,groovy]
 ----
 @BlackBox
@@ -127,9 +185,9 @@ String foo() {
     return "bar"
 }
 ----
-To start using BlackBox, add the @BlackBox annotation as shown above. It is as simple as that!
+To start using <<The Solution, BlackBox>>, add the <@BlackBox annotation as shown above. It is as simple as that!
 
-====== 4+1 BlackBox levels
+===== 4 BlackBox levels
 Specify explicitly the needed level of logging code injection granularity by providing "blackBoxLevel" parameter to @BlackBox annotation:
 
 [source,groovy]
@@ -141,19 +199,19 @@ String foo() {
 ----
 There are 5 possible values for the "blackBoxLevel" annotation parameter:
 
-<0> BlackBoxLevel.NONE
-<1> BlackBoxLevel.METHOD_ERROR
-<2> BlackBoxLevel.METHOD
-<3> BlackBoxLevel.STATEMENT
-<4> BlackBoxLevel.EXPRESSION
+<0> BlackBoxLevel.NONE - method is unmodified
+<1> BlackBoxLevel.METHOD_ERROR - corresponds to <<Method Exception handling transformation>>
+<2> BlackBoxLevel.METHOD - corresponds to <<Method transformation>>
+<3> BlackBoxLevel.STATEMENT - enables <<Statement transformation>> in addition to BlackBoxLevel.METHOD
+<4> BlackBoxLevel.EXPRESSION - enables <<Expression transformation>> in addition to BlackBoxLevel.METHOD and BlackBoxLevel.STATEMENT
 
-==== Compilation stage
-During the compilation phase BlackBox performs transformation of methods and constructors having the @BlackBox annotation.
+=== Compilation stage
+During the compilation phase <<The Solution, BlackBox>> performs transformation of methods and constructors having the @BlackBox annotation.
 As the result Method/Constructor code is modified having the additional logging added, while the method signatures and the actual functionality of the method are preserved.
 
-===== Method transformation and Log code injection levels
-====== Method Error
-*Before:*
+==== Method transformation and Log code injection levels
+===== Method Error
+.*Before:*
 [source,groovy]
 ----
 @BlackBox(blackBoxLevel = BlackBoxLevel.METHOD_ERROR)
@@ -162,7 +220,7 @@ String foo(String bar) {
 }
 ----
 
-*After:*
+.*After:*
 [source,groovy,linenums]
 ----
 String foo(String bar) {
@@ -180,10 +238,10 @@ String foo(String bar) {
 
 Method code is enclosed into Try/Catch statement and in case exception happens during execution of method code - it is logged *along with the method parameters which caused the exception.* +
 
-IMPORTANT: *This is one of the key functionalities of BlackBox* - in this scenario there is practically no performance impact on normal application execution - however if unhandled exception occurs - *we are now automatically aware of the Method Arguments which caused the exception.*
+IMPORTANT: *This is one of the key functionalities of <<The Solution, BlackBox>>* - in this scenario there is practically no performance impact on normal application execution - however if unhandled exception occurs - *we are now automatically aware of the Method Arguments which caused the exception.*
 
-====== Method
-*Before:*
+===== Method
+.*Before:*
 [source,groovy]
 ----
 @BlackBox(blackBoxLevel = BlackBoxLevel.METHOD)
@@ -192,7 +250,7 @@ String foo(String bar) {
 }
 ----
 
-*After:*
+.*After:*
 [source,groovy,linenums]
 ----
 String foo(String bar) {
@@ -221,8 +279,8 @@ String foo(String bar) {
 
 NOTE: Method arguments, result and exceptions are logged. Method code is not modified.
 
-====== Statement
-*Before:*
+===== Statement
+.*Before:*
 [source,groovy]
 ----
 @BlackBox(blackBoxLevel = BlackBoxLevel.STATEMENT)
@@ -231,7 +289,7 @@ String foo(String bar) {
 }
 ----
 
-*After:*
+.*After:*
 [source,groovy,linenums]
 ----
 String foo(String bar) {
@@ -257,8 +315,8 @@ String foo(String bar) {
 * The *statements* within the method are transformed according to BlackBox transformation rules, adding logging to method execution while preserving the original functional flow of the method code. +
 * For example in the above method the BlackBox transformation encloses "Return" statement into a closure, which is executed with logging of the line numbers and other meta data of "Return" statement during runtime.
 
-====== Expression
-*Before:*
+===== Expression
+.*Before:*
 [source,groovy]
 ----
 @BlackBox(blackBoxLevel = BlackBoxLevel.EXPRESSION)
@@ -267,7 +325,7 @@ String foo(String bar) {
 }
 ----
 
-*After:*
+.*After:*
 [source,groovy,linenums]
 ----
 String foo(String bar) {
@@ -296,7 +354,7 @@ String foo(String bar) {
 * This helps to log the expression evaluation results and have an exhaustive runtime data for methods having BlackBox annotation.
 * For example in the above method the BlackBox transformation encloses "Return" statement *expression* into a closure, which is executed with logging of the line numbers and other meta data of expression during runtime - *as well as expression evaluation result*.
 
-==== Runtime
+=== Runtime
 The injected/transformed code is taking it's effect during runtime (execution) of user program. +
 The runtime behavior can be controlled by 2 factors:
 
@@ -322,10 +380,10 @@ logging.level.io.infinite.blackbox.BlackBoxEngineSequential=debug
 logging.level.io.infinite.blackbox.BlackBoxEngineEmergency=debug
 ----
 
-===== Operating modes
+==== Operating modes
 BlackBox provides 2 operating modes for different usage scenarios.
 
-====== Real-time sequential
+===== Real-time sequential
 This mode is useful for *development/debugging* acting as a supplement/alternative approach to using a Debugger. +
 In this mode the logging code injected during compilation phase (as per BlackBox level values defined during writing the code) is executed and the results *immediately sent to Logback for printing the logs.* +
 For example *execution* of the below code:
@@ -389,7 +447,7 @@ Process finished with exit code 0
 From the above output we can easily track what methods are being called with which parameters, their execution flow and effects as well as results. +
 *We know all what happens in the application up to each and every bit.*
 
-====== Emergency
+===== Emergency
 This mode is useful for *production* usage providing details only in case when unhandled exception occurs. +
 
 IMPORTANT: In this mode BlackBox remains *silent* and does not produce any logging debug output unless exception is encountered. +
@@ -486,9 +544,12 @@ This principle should guarantee that @BlackBox annotation can be safely added to
 
 === Transformation rules
 BlackBox follows a clearly defined set of code transformation rules. +
-All Groovy AST Statements and Expressions are subject for transformation using these rules, depending on BlackBox level. +
+All Groovy AST Statements and Expressions are subject for transformation using these rules, depending on <<4 BlackBox levels,BlackBox level>>. +
 
-==== Method Error transformation
+==== Method Exception handling transformation
+
+Method Exception handling transformation is performed when <<4 BlackBox levels,BlackBox level>> is set to "METHOD_ERROR".
+
 ====
 [source,groovy]
 ----
@@ -514,6 +575,9 @@ try {
 NOTE: *visit* method is *NOT* called on method code and the AST traversing/transformation terminates  at this stage.
 
 ==== Method transformation
+
+Method transformation is performed when <<4 BlackBox levels,BlackBox level>> is set to "METHOD".
+
 ====
 [source,groovy]
 ----
@@ -543,11 +607,42 @@ finally {
 
 NOTE: *visit* method is *NOT* called on method code and the AST traversing/transformation terminates  at this stage.
 
-==== Statement transformations
-Statement transformations are applied when BlackBox level is set to "Statement" and above. +
+==== Statement transformation
+
+Statement transformations are applied when <<4 BlackBox levels,BlackBox level>> is set to "STATEMENT" and above. +
 In addition to "Method" transformation, *visit* method is called on method code and all statements are transformed according to the below rules:
 
+===== Standard Statement transformation
+
+====
+
+All statements (except Control Statements) are subject to below transformation:
+
+[source,groovy]
+----
+automaticBlackBox.statementExecutionOpen(<Statement Class Name>, <Original Untransformed Statement Code String>, <statement start and end line and column numbers>, <source AST node variable name>)
+<recursively transformed initial statement - child statements and expressions (if needed) transformed>
+automaticBlackBox.executionClose()
+----
+
+.Example:
+[source,groovy]
+----
+automaticBlackBox.statementExecutionOpen('IfStatement', 'if ( bar == \'foobar\') {\n    throw new java.lang.Exception(\'Bar can not be foobar\')\n}\n', 9, 10, 31, 33, 'BlockStatement:statements')
+if ( bar == 'foobar') {
+    automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.lang.Exception(\'Bar can not be foobar\')\n', 13, 57, 32, 32, 'BlockStatement:statements')
+    throw new java.lang.Exception('Bar can not be foobar')
+}
+automaticBlackBox.executionClose()
+----
+
+====
+
+:outerinner:: "Outer" transformation means outside corresponding *visit* method of the expression. "Inner" means inside "visit" method.
+
 ===== Control Statement transformation
+
+====
 
 TIP: Control statement is a statement that affects the order of statements execution in the program.
 
@@ -567,36 +662,16 @@ automaticBlackBox.preprocessControlStatement(<Control statement class name>, <Or
 <original control statement (Return, Continue, Break or Throw)>
 ----
 
-Example:
+.Example:
 [source,groovy]
 ----
 automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.lang.Exception(\'Bar can not be foobar\')\n', 13, 57, 32, 32, 'BlockStatement:statements')
 throw new java.lang.Exception('Bar can not be foobar')
 ----
 
-===== Standard Statement transformation
+====
 
-All other statements without exceptions are subject to below transformation:
-
-[source,groovy]
-----
-automaticBlackBox.statementExecutionOpen(<Statement Class Name>, <Original Untransformed Statement Code String>, <statement start and end line and column numbers>, <source AST node variable name>)
-<recursively transformed initial statement - child statements and expressions (if needed) transformed>
-automaticBlackBox.executionClose()
-----
-
-Example:
-[source,groovy]
-----
-automaticBlackBox.statementExecutionOpen('IfStatement', 'if ( bar == \'foobar\') {\n    throw new java.lang.Exception(\'Bar can not be foobar\')\n}\n', 9, 10, 31, 33, 'BlockStatement:statements')
-if ( bar == 'foobar') {
-    automaticBlackBox.preprocessControlStatement('ThrowStatement', 'throw new java.lang.Exception(\'Bar can not be foobar\')\n', 13, 57, 32, 32, 'BlockStatement:statements')
-    throw new java.lang.Exception('Bar can not be foobar')
-}
-automaticBlackBox.executionClose()
-----
-
-:outerinner:: "Outer" transformation means outside corresponding *visit* method of the expression. "Inner" means inside "visit" method.
+===== Statement transformation rules
 
 NOTE: {outerinner}
 
@@ -627,7 +702,7 @@ NOTE: {outerinner}
 |ExpressionStatement|<<Standard Statement transformation>>|* expression
 |
 
-|ReturnStatement|<<Control Statement transformation>>|*expression
+|ReturnStatement|<<Control Statement transformation>>|* expression
 |Child Expression is transformed only non-void methods
 
 |AssertStatement|<<Standard Statement transformation>>|* booleanExpression
@@ -654,7 +729,7 @@ NOTE: {outerinner}
 |BreakStatement|<<Control Statement transformation>>|No transformation
 |
 
-|ContinueStatement|<<Control Statement transformation>>|*No transformation
+|ContinueStatement|<<Control Statement transformation>>|* No transformation
 |
 
 |SynchronizedStatement|<<Standard Statement transformation>>|* expression
@@ -671,11 +746,13 @@ NOTE: {outerinner}
 
 ==== Expression transformation
 
-Expression transformations are applied when BlackBox level is set to "Expression".
+Expression transformations are applied when <<4 BlackBox levels,BlackBox level>> is set to "EXPRESSION".
 
 Unless specified differently, any expression undergoes the below default transformation:
 
 ===== Standard Expression transformation
+
+====
 
 All expressions except DeclarationExpression are subject to below transformation:
 
@@ -694,7 +771,11 @@ automaticBlackBox.expressionEvaluation('VariableExpression', 'bar ', 16, 19, 31,
 }, 'ReturnStatement:expression')
 ----
 
+====
+
 ===== Declaration Expression transformation
+
+====
 
 DeclarationExpression is *Not* wrapped into MethodCallExpression - it is rather transformed into ListOfExpressionsExpression having the below expressions:
 
@@ -716,6 +797,8 @@ TIP: *Q*: Why do we inject code only for DeclarationExpression (by adding expres
 
 NOTE: VariableScopeVisitor must be able to declare the variable after BlackBox transformation into the same branch of variable scopes. +
 Thus we have to *surround* DeclarationExpression with logging code (MethodCall expressions) and replace it with ListOfExpressionsExpression.
+
+====
 
 ===== Expression transformation rules
 
