@@ -1,15 +1,14 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <xs:schema
-        targetNamespace="https://i-t.io/blackbox/groovy/2_x_x/Main"
-        xmlns="https://i-t.io/blackbox/groovy/2_x_x/Main"
+        targetNamespace="https://i-t.io/blackbox/groovy/2_x_x/BlackBox.xsd"
+        xmlns="https://i-t.io/blackbox/groovy/2_x_x/BlackBox.xsd"
         xmlns:xs="http://www.w3.org/2001/XMLSchema"
         elementFormDefault="qualified">
     <xs:annotation>
         <xs:documentation>
-            Todo: migrate to Asciidoc
-            This file is:
-                - Entry point for JAXB class generation task
-                - Main XSD for BlackBox XML log files
+            * Primary XSD file
+            * JAXB Class generation
+            * Defines rootAstNode element - root element of BlackBox XML log files
         </xs:documentation>
     </xs:annotation>
     <!---->
@@ -28,7 +27,7 @@
     <xs:element name="rootAstNode" type="ASTNode">
         <xs:annotation>
             <xs:documentation>
-                This is the root element in the log
+                This is the root element in the BlackBox XML log files
             </xs:documentation>
         </xs:annotation>
     </xs:element>

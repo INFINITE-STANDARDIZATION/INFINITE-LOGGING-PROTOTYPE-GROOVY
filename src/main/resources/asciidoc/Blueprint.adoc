@@ -7,12 +7,12 @@ Anton Pryamostanov <https://github.com/apryamostanov[@apryamostanov]>
 :page-layout: docs
 ifndef::env-site[]
 :toc:
-:toc: left
-:toclevels: 6
+:toclevels: 2
 :icons: font
 :idprefix:
 :idseparator: -
 :sectanchors:
+:sectlinks:
 :source-highlighter: highlightjs
 endif::[]
 :experimental:
@@ -26,6 +26,7 @@ endif::[]
 :includedir: _includes
 :source-highlighter: Coderay coderay
 :sectnums:
+:sectnumlevels: 10
 // Refs
 :blackbox-blueprint: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint
 :blackbox-code: https://github.com/INFINITE-TECHNOLOGY/BLACKBOX
@@ -135,11 +136,13 @@ TIP: For example consider scenario of finding which specific "return" statement 
 
 === Terminology
 
+[discrete]
 ==== Logging
 
 Logging is a process of saving *structured* data on a permanent storage with assumption that it may be used in future. +
 However it is neither known how and when this data will be used neither it is guaranteed that this data is useful.
 
+[discrete]
 ==== Logging Engine
 
 Logging Engine is a library that provides an API to save log data. +
@@ -147,10 +150,12 @@ Logging Engine is a library that provides an API to save log data. +
 IMPORTANT: Logging Engine does not define neither the structure itself nor API of structuring the log data. +
 Logging Engine defines only structure of log record format (such as adding timestamp and thread infromation), while the input data comes in its final form from outside of the log engine.
 
+[discrete]
 ==== User code
 
 Code written by application programmers for business or other purposes.
 
+[discrete]
 ==== Semantic logging
 
 Semantic-level logging is a technique which helps to trace application execution flow as per code semantic structures such as:
@@ -159,6 +164,7 @@ Semantic-level logging is a technique which helps to trace application execution
 <2> Method arguments and result
 <3> Statements such as if/else
 <4> Expressions such as assignment expression
+
 
 ==== BlackBox
 
@@ -408,7 +414,7 @@ class SandBox implements Runnable {
 
 Will *output* the following results:
 ----
-15:59:49.150 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential - <rootAstNode startDateTime="2018-10-22T15:59:49.120+04:00" xmlns="https://i-t.io/logging/groovy/2_x_x/Main" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+15:59:49.150 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential - <rootAstNode startDateTime="2018-10-22T15:59:49.120+04:00" xmlns="https://i-t.io/logging/groovy/2_x_x/BlackBox.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
 15:59:49.151 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -     <astNodeList>
 15:59:49.182 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -         <astNode xsi:type="MethodNode" methodName="foo" className="io.infinite.blackbox.SandBox" startDateTime="2018-10-22T15:59:49.156+04:00" lineNumber="29" columnNumber="5" lastLineNumber="32" lastColumnNumber="6">
 15:59:49.182 [Compilation_SandBox.foo] DEBUG io.infinite.blackbox.BlackBoxEngineSequential -             <argumentList>
@@ -482,7 +488,7 @@ Will *output* the following results (only after exception occurs):
 
 ----
 16:17:41.085 [Compilation_SandBox.foo] ERROR io.infinite.blackbox.BlackBoxEngineEmergency - <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<rootAstNode xsi:type="MethodNode" methodName="foo" className="io.infinite.blackbox.SandBox" startDateTime="2018-10-22T16:17:40.843+04:00" lineNumber="29" columnNumber="5" lastLineNumber="35" lastColumnNumber="6" xmlns="https://i-t.io/blackbox/groovy/2_x_x/Main" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+<rootAstNode xsi:type="MethodNode" methodName="foo" className="io.infinite.blackbox.SandBox" startDateTime="2018-10-22T16:17:40.843+04:00" lineNumber="29" columnNumber="5" lastLineNumber="35" lastColumnNumber="6" xmlns="https://i-t.io/blackbox/groovy/2_x_x/BlackBox.xsd" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
     <astNodeList/>
     <argumentList>
         <argument argumentClassName="java.lang.String" argumentName="bar">
@@ -931,39 +937,255 @@ NOTE: {outerinner}
 |===
 
 === Groovy class model
+[discrete]
 ==== BlackBox
+[discrete]
 ==== BlackBoxEngine
+[discrete]
 ==== BlackBoxEngineEmergency
+[discrete]
 ==== BlackBoxEngineHierarchical
+[discrete]
 ==== BlackBoxEngineSequential
+[discrete]
 ==== BlackBoxLevel
+[discrete]
 ==== BlackBoxMode
+[discrete]
 ==== BlackBoxTransformation
+[discrete]
 ==== BlackBoxVisitor
+[discrete]
 ==== ThreadLocal
 === Runtime engine API
 ==== expressionExecutionOpen
+[discrete]
 ==== expressionEvaluation
+[discrete]
 ==== methodExecutionOpen
+[discrete]
 ==== statementExecutionOpen
+[discrete]
 ==== executionClose
+[discrete]
 ==== preprocessControlStatement
+[discrete]
 ==== initRootAstNode
+[discrete]
 ==== executeMethod
+[discrete]
 ==== exception
+
 === XSD model
-==== XSD class model diagram
-==== BlackBox
-==== ASTNode
-==== ASTNodeList
-==== MethodNode
-==== Expression
-==== Statement
-==== Argument
-==== ArgumentList
-==== ASTTrace
-==== Object
-==== Exception
+
+==== File Structure
+
+BlackBox XSD type (class) model is based upon a simplified Groovy AST class model, which allows easy adaptation of the original naming conventions (classes and field names).
+
+===== BlackBox.xsd
+
+The central XSD file *BlackBox.xsd* is having the following URL/namespace:
+
+* https://i-t.io/blackbox/groovy/2_x_x/BlackBox.xsd
+
+This file is used for the following purposes:
+
+* This is the main XSD file
+* JAXB Class generation
+* Defines rootAstNode element - root element of BlackBox XML log files
+
+XSD files in BlackBox solution are organized in similar way to Java classes - separate file per XML Type.
+BlackBox.xsd contains imports for all dependencies.
+
+==== Versioning
+
+XSD/BlackBox versioning is linked to Groovy versioning, as it is dependent on AST Class model.
+
+Current Groovy Production versions is:
+
+* 2.5.3
+
+Therefore BlackBox XSD has version 2.x.x which will accomodate any 2.5+.3+ changes as backward compatible.
+
+When Groovy 3.x.x will be released a separate XSD file will be build along with BlackBox version.
+
+==== XSD/JAXB class model diagram
+
+NOTE: Classes generated by JAXB in BlackBox project have "XML" class name prefix.
+
+*PNG file*
+
+==== BlackBox XSD Types
+
+[discrete]
+===== ASTNode
+
+ASTNode XML type corresponds to Groovy ASTNode class.
+
+TIP: http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/ASTNode.html
+
+In BlackBox project XSD types it is a super-class for 3 classes (which is normally specified by *xsi:type* attribute of ASTNode element):
+
+* <<MethodNode>>
+* <<expression-2, Expression>>
+* <<statement-2, Statement>>
+
+.Elements
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|restoredScriptCode|string|ASTNode code restored by Groovy AstNodeToScriptVisitor.
+
+|astNodeList|<<ASTNodeList>>|List of child ASTNodes transformed by BlackBox and processed by runtime environment during program execution.
+
+|===
+
+.Atributes
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|startDateTime|datetime|Datetime when ASTNode evaluation/execution started.
+|sourceNodeName|string|Standalone ASTNode such as BlockStatement has no awareness to where it belongs. +
+However BlackBox adds a useful visibility to help to understand that e.g. BloackStatement is originating from "IfStatement:elseBlock". +
+Format of this field is "Class name:field name" of the source variable where this AST Node is referenced.
+|lineNumber|integer|Start line number of the ASTNode - you can use it to navigate into your code
+|columnNumber|integer|Start column number of the ASTNode - you can use it to navigate into your code
+|lastLineNumber|integer|Ending line number of the ASTNode - you can use it to navigate into your code
+|lastColumnNumber|integer|Ending column number of the ASTNode - you can use it to navigate into your code
+
+|===
+
+[discrete]
+===== ASTNodeList
+
+* ASTNodeList represents collection of ASTNode objects.
+
+.Elements
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|astNode|ASTNode|Collection element (unbounded occurrence)
+
+|===
+
+.Atributes
+N/A
+
+[discrete]
+===== MethodNode
+
+* MethodNode XML type corresponds to Groovy MethodNode class.
+* MethodNode XML type corresponds to an invocation of <<User code>> method annotated with <<BlackBox Annotation>>.
+* Method invocation is logged with <<4 BlackBox levels,BlackBox level>> "METHOD" and above.
+* Method arguments and result are logged
+* If exception occurs it is also logged for such methods
+
+TIP: http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/MethodNode.html
+
+This is a subclass of ASTNode XML type.
+
+.Elements
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|argumentList|<<ArgumentList>>|List of method <<Argument, Arguments>>
+|exception|<<Exception>>|Method <<Exception>> (if present)
+|methodResult|<<Object>>|Method result <<Object>> (if non-void and non-null return value of method)
+
+|===
+
+.Atributes
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|methodName|string|Method name (http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/MethodNode.html#getName--)
+|className|string|Canonical class name of method declaring class (http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/AnnotatedNode.html#getDeclaringClass--)
+
+|===
+
+
+[discrete]
+===== Statement
+
+* Statement XML type corresponds to Groovy Statement class.
+* Statement XML type corresponds to an execution of a statement within a <<User code>> method annotated with <<BlackBox Annotation>>.
+* Statements are logged with <<4 BlackBox levels,BlackBox level>> "STATEMENT" and above.
+
+TIP: http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/stmt/Statement.html
+
+NOTE: All Groovy Statements are supported.
+
+This is a subclass of ASTNode XML type.
+
+.Elements
+N/A
+
+.Atributes
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|statementClassName|string|Simple class name of Groovy Statement subclass, such as IfStatement.
+
+|===
+
+[discrete]
+===== Expression
+
+* Expression XML type corresponds to Groovy Expression class.
+* Expression XML type corresponds to an evaluation or execution of an expression within a <<User code>> method annotated with <<BlackBox Annotation>>.
+* Expressions are logged with <<4 BlackBox levels,BlackBox level>> "EXPRESSION".
+* Expression evaluation result is logged
+
+TIP: http://docs.groovy-lang.org/docs/latest/html/api/org/codehaus/groovy/ast/expr/Expression.html
+
+NOTE: All Groovy Expressions are supported.
+
+This is a subclass of ASTNode XML type.
+
+.Elements
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|expressionValue|<<Object>>|<<Object>> to which the expression has been evaluated.
+
+IMPORTANT: above is one of the most important features of BlackBox - ability to track/review Object values in transition between expressions.
+
+|===
+
+.Atributes
+
+[cols="a,a,a"]
+|===
+|Name|Type|Description
+
+|expressionClassName|string|Simple class name of Groovy Expression subclass, such as MethodCallExpression.
+
+|===
+
+[discrete]
+===== Argument
+[discrete]
+===== ArgumentList
+[discrete]
+===== ASTTrace
+[discrete]
+===== Object
+[discrete]
+===== Exception
 == Risks
 === Performance
 ==== ThreadLocal usage
