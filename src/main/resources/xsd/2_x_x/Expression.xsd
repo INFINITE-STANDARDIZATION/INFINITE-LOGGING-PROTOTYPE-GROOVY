@@ -7,6 +7,11 @@
     <xs:include schemaLocation="Argument.xsd"/>
     <xs:include schemaLocation="Object.xsd"/>
     <xs:complexType name="Expression">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#expression-1
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexContent>
             <xs:extension base="ASTNode">
                 <xs:sequence>

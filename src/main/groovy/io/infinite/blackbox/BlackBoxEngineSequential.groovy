@@ -7,12 +7,19 @@ import io.infinite.blackbox.generated.XMLExpression
 import io.infinite.blackbox.generated.XMLMethodNode
 import io.infinite.blackbox.generated.XMLStatement
 
+/**
+ * This class implements BlackBox Runtime API - Sequential Mode functionality
+ * @see <a href="https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#runtime-engine-api">BlackBox Blueprint - Runtime Engine API</a>
+ * @see <a href="https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#real-time-sequential">BlackBox Blueprint - Sequential Operating Mode</a>
+ *
+ * <br/>
+ * This class prints runtime AST Node execution in realitime.
+ *
+ */
 @Slf4j
 class BlackBoxEngineSequential extends BlackBoxEngine {
 
     Integer depth = 0
-
-    //todo: remove closed ast nodes
 
     private String getPad() {
         if (depth >= 0) {
@@ -21,12 +28,19 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
             return "!!!"
         }
     }
-    
+
+    /**
+     * Logback call to perform actual log printing.
+     */
     private void log(String iText) {
         //todo: break multiline text into separate log calls
         log.debug(getPad() + iText)
     }
 
+    /**
+     * In addition to base BlackBoxEngine behavior, <br/>
+     * - prints opening tags of Expression.
+     */
     @Override
     void expressionExecutionOpen(String iExpressionName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
         super.expressionExecutionOpen(iExpressionName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iNodeSourceName)
@@ -37,6 +51,10 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
         depth++
     }
 
+    /**
+     * In addition to base BlackBoxEngine behavior, <br/>
+     * - prints opening tags of Statement.
+     */
     @Override
     void statementExecutionOpen(String iStatementName, String iRestoredScriptCode, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, String iNodeSourceName) {
         super.statementExecutionOpen(iStatementName, iRestoredScriptCode, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, iNodeSourceName)
@@ -47,6 +65,10 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
         depth++
     }
 
+    /**
+     * In addition to base BlackBoxEngine behavior, <br/>
+     * - prints closing tags of MethodNode.
+     */
     @Override
     void methodExecutionOpen(String iClassSimpleName, String iPackageName, String iMethodName, Integer iColumnNumber, Integer iLastColumnNumber, Integer iLineNumber, Integer iLastLineNumber, Map<String, Object> methodArgumentMap) {
         super.methodExecutionOpen(iClassSimpleName, iPackageName, iMethodName, iColumnNumber, iLastColumnNumber, iLineNumber, iLastLineNumber, methodArgumentMap)
@@ -69,8 +91,15 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
         depth++
     }
 
+    /**
+     * In addition to base BlackBoxEngine behavior, <br/>
+     * - prints closing tags of active AST Node.
+     */
     @Override
     void executionClose() {
+        if (astNode.parentAstNode != null) {
+            astNode.parentAstNode.getAstNodeList().getAstNode().remove(astNode)
+        }
         switch(astNode) {
             case XMLExpression:
                 depth--
@@ -121,6 +150,10 @@ class BlackBoxEngineSequential extends BlackBoxEngine {
         super.executionClose()
     }
 
+    /**
+     * In addition to base BlackBoxEngine behavior, <br/>
+     * - prints rootAstNode XML.
+     */
     @Override
     void initRootAstNode() {
         super.initRootAstNode()

@@ -17,6 +17,12 @@ import org.codehaus.groovy.transform.AbstractASTTransformation
 import org.codehaus.groovy.transform.GroovyASTTransformation
 import org.codehaus.groovy.transform.sc.ListOfExpressionsExpression
 
+/**
+ * This class implements BlackBox Transformation Rules for @BlackBox annotation.
+ *
+ * @see <a href="https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#transformation-rules">BlackBox Blueprint - Transformation Rules</a>
+ *
+ */
 @ToString(includeNames = true, includeFields = true, includePackage = false)
 @GroovyASTTransformation(
         phase = CompilePhase.SEMANTIC_ANALYSIS
@@ -27,6 +33,13 @@ class BlackBoxTransformation extends AbstractASTTransformation {
     AnnotationNode annotationNode
     BlackBoxLevel blackBoxLevel
 
+    /**
+     * Visits method or constructor<br/>
+     * Fixes variable scopes of modified code.
+     *
+     * @param iAstNodeArray
+     * @param iSourceUnit
+     */
     void visit(ASTNode[] iAstNodeArray, SourceUnit iSourceUnit) {
         try {
             ASTNode.getMetaClass().origCodeString = null
@@ -47,6 +60,13 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
+    /**
+     * Gets BlackBox Level from Annotation node.
+     *
+     * @param iAnnotationNode
+     * @param iMethodName
+     * @return
+     */
     static BlackBoxLevel getBlackBoxLevel(ASTNode iAnnotationNode, String iMethodName) {
         AnnotationNode annotationNode = iAnnotationNode as AnnotationNode
         Expression memberExpression = annotationNode.getMember("blackBoxLevel")
@@ -58,6 +78,14 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         }
     }
 
+    /**
+     * Used for Standard Expression transformation. <br/>
+     * Transforms any expression into MethodCallExpression to BlackBoxEngine instance -> expressionEvaluation method.
+     *
+     * @param iExpression
+     * @param iSourceNodeName
+     * @return
+     */
     private static MethodCallExpression wrapExpressionIntoMethodCallExpression(Expression iExpression, iSourceNodeName) {
         ClosureExpression closureExpression = GeneralUtils.closureX(GeneralUtils.returnS(iExpression))
         closureExpression.setVariableScope(new VariableScope())
@@ -81,6 +109,11 @@ class BlackBoxTransformation extends AbstractASTTransformation {
         return methodCallExpression
     }
 
+    /**
+     * Transforms method or constructor according to BlackBox Transformation rules.
+     *
+     * @param iMethodNode
+     */
     private void transformMethod(MethodNode iMethodNode) {
         List<MapEntryExpression> argumentMapEntryExpressionList = new ArrayList<>()
         if (methodArgumentsPresent(iMethodNode.getParameters())) {

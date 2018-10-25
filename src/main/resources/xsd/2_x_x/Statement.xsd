@@ -5,6 +5,11 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="ASTNode.xsd"/>
     <xs:complexType name="Statement">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#statement-1
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexContent>
             <xs:extension base="ASTNode">
                 <xs:attribute name="statementClassName" type="xs:string" use="required"/>

@@ -7,6 +7,13 @@ import org.codehaus.groovy.ast.expr.*
 import org.codehaus.groovy.ast.stmt.*
 import org.codehaus.groovy.ast.tools.GeneralUtils
 
+
+/**
+ * This class traverses AST and ensures BlackBox Transformation Rules are applied for inner transformation of AST Nodes
+ *
+ * @see <a href="https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#transformation-rules">BlackBox Blueprint - Transformation Rules</a>
+ *
+ */
 @ToString(includeNames = true, includeFields = true)
 class BlackBoxVisitor extends CodeVisitorSupport {
 

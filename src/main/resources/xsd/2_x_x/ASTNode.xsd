@@ -6,6 +6,11 @@
     <xs:include schemaLocation="ASTNodeList.xsd"/>
     <xs:include schemaLocation="ArgumentList.xsd"/>
     <xs:complexType name="ASTNode">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#astnode
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element name="restoredScriptCode" type="xs:string"/>
             <xs:element type="ASTNodeList" name="astNodeList" minOccurs="0"/>

@@ -6,9 +6,7 @@
         elementFormDefault="qualified">
     <xs:annotation>
         <xs:documentation>
-            * Primary XSD file
-            * JAXB Class generation
-            * Defines rootAstNode element - root element of BlackBox XML log files
+            https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#blackbox-xsd
         </xs:documentation>
     </xs:annotation>
     <!---->
@@ -19,7 +17,6 @@
     <xs:include schemaLocation="Exception.xsd"/>
     <xs:include schemaLocation="ArgumentList.xsd"/>
     <xs:include schemaLocation="Expression.xsd"/>
-    <xs:include schemaLocation="ASTTrace.xsd"/>
     <xs:include schemaLocation="ASTNode.xsd"/>
     <xs:include schemaLocation="ASTNodeList.xsd"/>
     <xs:include schemaLocation="Statement.xsd"/>

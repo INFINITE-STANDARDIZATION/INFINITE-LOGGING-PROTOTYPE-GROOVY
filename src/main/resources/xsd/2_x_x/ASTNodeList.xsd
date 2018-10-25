@@ -5,6 +5,11 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="ASTNode.xsd"/>
     <xs:complexType name="ASTNodeList">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#astnodelist
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element type="ASTNode" name="astNode" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>

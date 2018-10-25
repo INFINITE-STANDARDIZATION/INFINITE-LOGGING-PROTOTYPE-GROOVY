@@ -4,6 +4,11 @@
            xmlns="https://i-t.io/blackbox/groovy/2_x_x/BlackBox.xsd"
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:complexType name="Argument">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#argument
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element name="argumentValue" type="xs:string"/>
         </xs:sequence>

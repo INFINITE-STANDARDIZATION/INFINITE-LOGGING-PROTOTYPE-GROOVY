@@ -5,6 +5,11 @@
            xmlns:xs="http://www.w3.org/2001/XMLSchema">
     <xs:include schemaLocation="Argument.xsd"/>
     <xs:complexType name="ArgumentList">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#argumentlist
+            </xs:documentation>
+        </xs:annotation>
         <xs:sequence>
             <xs:element name="argument" type="Argument" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>

@@ -8,6 +8,11 @@
     <xs:include schemaLocation="ASTNode.xsd"/>
     <xs:include schemaLocation="Exception.xsd"/>
     <xs:complexType name="MethodNode">
+        <xs:annotation>
+            <xs:documentation>
+                https://github.com/INFINITE-TECHNOLOGY/BLACKBOX/wiki/Blueprint#methodnode
+            </xs:documentation>
+        </xs:annotation>
         <xs:complexContent>
             <xs:extension base="ASTNode">
                 <xs:sequence>
